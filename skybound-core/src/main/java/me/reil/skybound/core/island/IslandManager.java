@@ -76,6 +76,11 @@ public final class IslandManager implements IslandProvider {
             return null;
         }
 
+        // Normalize schematic name — use "desert" as default if null/empty
+        if (schematicName == null || schematicName.isEmpty()) {
+            schematicName = "desert";
+        }
+
         String islandId = UUID.randomUUID().toString().substring(0, 8);
         Location center = calculateNextCenter();
 
@@ -83,16 +88,53 @@ public final class IslandManager implements IslandProvider {
         island.setName(owner.getName());
         island.setHome(center.clone().add(0.5, 1, 0.5));
 
-        IslandCreateEvent event = new IslandCreateEvent(owner, island, schematicName);
-        Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) {
-            return null;
-        }
+        plugin.getLogger().info("Island created: " + islandId + " for " + owner.getName()
+                + " (schematic: " + schematicName + ")"
+                + " world=" + (center.getWorld() != null ? center.getWorld().getName() : "NULL")
+                + " at " + center.getBlockX() + "," + center.getBlockY() + "," + center.getBlockZ());
 
+        // Register island in maps FIRST so addons can find it via API
         islands.put(islandId, island);
         playerIslandMap.put(owner.getUniqueId(), islandId);
 
-        plugin.getLogger().info("Island created: " + islandId + " for " + owner.getName());
+        // Fire event AFTER island is registered — addons (island-core) listen to this
+        IslandCreateEvent event = new IslandCreateEvent(owner, island, schematicName);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            // Rollback registration
+            islands.remove(islandId);
+            playerIslandMap.remove(owner.getUniqueId());
+            return null;
+        }
+
+        // Direct notification to Island Core addon (backup if event doesn't reach)
+        try {
+            org.bukkit.plugin.Plugin islandCorePlugin = Bukkit.getPluginManager().getPlugin("SkyBound-IslandCore");
+            if (islandCorePlugin != null && islandCorePlugin.isEnabled()) {
+                plugin.getLogger().info("Notifying IslandCore addon...");
+                // Give cores directly via scheduled task (ensures plugin is fully ready)
+                final org.bukkit.entity.Player finalOwner = owner;
+                Bukkit.getScheduler().runTaskLater((org.bukkit.plugin.java.JavaPlugin) plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            java.lang.reflect.Method m = islandCorePlugin.getClass().getMethod("onIslandCreated", org.bukkit.entity.Player.class, String.class);
+                            m.setAccessible(true);
+                            m.invoke(islandCorePlugin, finalOwner, islandId);
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Failed to notify IslandCore: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        }
+                    }
+                }, 2L);
+            } else {
+                plugin.getLogger().info("IslandCore addon not found or not enabled.");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("IslandCore notification error: " + e.getMessage());
+        }
+
+        plugin.getLogger().info("Island created: " + islandId + " for " + owner.getName() + " (schematic: " + schematicName + ")");
+        saveData();
         return island;
     }
 
@@ -105,10 +147,29 @@ public final class IslandManager implements IslandProvider {
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled()) return false;
 
+        // Teleport all online members to spawn
+        Location spawn = Bukkit.getWorlds().get(0).getSpawnLocation();
         for (UUID member : island.getMembers()) {
+            Player p = Bukkit.getPlayer(member);
+            if (p != null && p.isOnline()) {
+                p.teleport(spawn);
+                p.sendMessage("\u00a7e\u2726 Остров удалён.");
+            }
             playerIslandMap.remove(member);
         }
+
+        // Clear island blocks asynchronously on next tick
+        final IslandImpl toDelete = island;
+        Bukkit.getScheduler().runTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                clearIslandBlocks(toDelete);
+            }
+        });
+
         islands.remove(islandId);
+        saveData();
+        plugin.getLogger().info("Island deleted: " + islandId);
         return true;
     }
 
@@ -116,8 +177,35 @@ public final class IslandManager implements IslandProvider {
     public boolean regenerateIsland(String islandId, String schematicName) {
         IslandImpl island = islands.get(islandId);
         if (island == null) return false;
-        // Clear blocks in radius then paste schematic
+        // Clear blocks in radius
         clearIslandBlocks(island);
+        // Schematic paste is handled by the caller (IslandCommand.cmdRegen)
+        plugin.getLogger().info("Island regenerated: " + islandId + " (schematic: " + schematicName + ")");
+
+        // Notify Island Core addon to give cores
+        try {
+            org.bukkit.plugin.Plugin islandCorePlugin = Bukkit.getPluginManager().getPlugin("SkyBound-IslandCore");
+            if (islandCorePlugin != null && islandCorePlugin.isEnabled()) {
+                org.bukkit.entity.Player owner = Bukkit.getPlayer(island.getOwner());
+                if (owner != null) {
+                    final org.bukkit.entity.Player finalOwner = owner;
+                    Bukkit.getScheduler().runTaskLater((org.bukkit.plugin.java.JavaPlugin) plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                java.lang.reflect.Method m = islandCorePlugin.getClass().getMethod("onIslandCreated", org.bukkit.entity.Player.class, String.class);
+                                m.setAccessible(true);
+                                m.invoke(islandCorePlugin, finalOwner, islandId);
+                            } catch (Exception e) {
+                                plugin.getLogger().warning("Failed to notify IslandCore on regen: " + e.getMessage());
+                            }
+                        }
+                    }, 2L);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        saveData();
         return true;
     }
 
@@ -250,7 +338,7 @@ public final class IslandManager implements IslandProvider {
         return islands;
     }
 
-    private void clearIslandBlocks(IslandImpl island) {
+    public void clearIslandBlocks(IslandImpl island) {
         Location center = island.getCenter();
         World world = center.getWorld();
         if (world == null) return;
@@ -270,6 +358,11 @@ public final class IslandManager implements IslandProvider {
 
     private Location calculateNextCenter() {
         World world = Bukkit.getWorld(config.getIslandWorldName());
+        if (world == null) {
+            // Try to create the world if it doesn't exist
+            plugin.getLogger().warning("Island world '" + config.getIslandWorldName() + "' not found! Using default world.");
+            world = Bukkit.getWorlds().get(0);
+        }
         int spacing = config.getIslandSpacing();
         int baseY = config.getBaseY();
 

@@ -31,6 +31,7 @@ public final class IslandImpl implements Island {
     private final Map<String, Object> settings = new LinkedHashMap<String, Object>();
     private double bankBalance;
     private double value;
+    private String schematicName;
 
     public IslandImpl(String id, UUID owner, Location center, int radius) {
         this.id = id;
@@ -139,6 +140,9 @@ public final class IslandImpl implements Island {
     public void setSetting(String key, Object value) {
         settings.put(key, value);
     }
+
+    public String getSchematicName() { return schematicName; }
+    public void setSchematicName(String schematicName) { this.schematicName = schematicName; }
 
     @Override public double getBankBalance() { return bankBalance; }
     @Override public void setBankBalance(double amount) { this.bankBalance = amount; }

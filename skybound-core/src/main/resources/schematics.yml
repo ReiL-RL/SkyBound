@@ -1,32 +1,67 @@
-# SkyBound - Конфигурация схематик
-# Положите .schem или .schematic файлы в plugins/SkyBound/schematics/
+# Доступные схематики островов
+# Отображаются в GUI при создании острова (/is create)
 
 schematics:
-  default:
-    display-name: "&a\u2726 Классический остров"
-    file: "default.schem"
-    icon: GRASS_BLOCK
-    description:
-      - "&7Классический скайблок остров"
-      - "&7с деревом и сундуком."
   desert:
-    display-name: "&e\u2726 Пустынный остров"
-    file: "desert.schem"
+    display-name: "&e✦ Пустынный остров"
     icon: SAND
     description:
-      - "&7Песчаный остров"
-      - "&7с кактусом."
-  nether:
-    display-name: "&c\u2726 Адский остров"
-    file: "nether.schem"
-    icon: NETHERRACK
+      - "&7Песчаный остров с кактусами"
+      - "&7и пустынной атмосферой"
+    file: desert.schem
+  desert_nether:
+    display-name: "&c✦ Пустынный Незер"
+    icon: RED_SAND
     description:
-      - "&7Адский остров"
-      - "&7с ресурсами незера."
+      - "&7Пустынный остров"
+      - "&7в стиле Незера"
+    file: desert_nether.schem
+  desert_end:
+    display-name: "&5✦ Пустынный Энд"
+    icon: END_STONE
+    description:
+      - "&7Пустынный остров"
+      - "&7в стиле Энда"
+    file: desert_end.schem
+  jungle:
+    display-name: "&a✦ Тропический остров"
+    icon: JUNGLE_LOG
+    description:
+      - "&7Зелёный остров с джунглями"
+      - "&7и тропической растительностью"
+    file: jungle.schem
+  jungle_nether:
+    display-name: "&4✦ Тропический Незер"
+    icon: CRIMSON_STEM
+    description:
+      - "&7Тропический остров"
+      - "&7в стиле Незера"
+    file: jungle_nether.schem
+  jungle_end:
+    display-name: "&d✦ Тропический Энд"
+    icon: PURPUR_BLOCK
+    description:
+      - "&7Тропический остров"
+      - "&7в стиле Энда"
+    file: jungle_end.schem
   mushroom:
-    display-name: "&d\u2726 Грибной остров"
-    file: "mushroom.schem"
+    display-name: "&d✦ Грибной остров"
     icon: RED_MUSHROOM_BLOCK
     description:
-      - "&7Мицелиевый остров"
-      - "&7с гигантскими грибами."
+      - "&7Мистический остров с грибами"
+      - "&7и мицелием"
+    file: mushroom.schem
+  mushroom_nether:
+    display-name: "&6✦ Грибной Незер"
+    icon: WARPED_STEM
+    description:
+      - "&7Грибной остров"
+      - "&7в стиле Незера"
+    file: mushroom_nether.schem
+  mushroom_end:
+    display-name: "&8✦ Грибной Энд"
+    icon: CHORUS_FLOWER
+    description:
+      - "&7Грибной остров"
+      - "&7в стиле Энда"
+    file: mushroom_end.schem

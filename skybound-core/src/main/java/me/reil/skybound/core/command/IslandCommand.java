@@ -102,9 +102,24 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
     private void cmdCreate(Player p, String[] args) {
         if (getIsland(p) != null) { l().send(p, "island.already-has"); return; }
         if (args.length > 1) {
-            Island is = plugin.getIslandManager().createIsland(p, args[1]);
-            if (is != null) { plugin.getSchematicService().paste(args[1] + ".schem", is.getCenter()); p.teleport(is.getHome()); l().send(p, "island.created"); }
-            else l().send(p, "island.cannot-create");
+            String schematicName = args[1];
+            Island is = plugin.getIslandManager().createIsland(p, schematicName);
+            if (is != null) {
+                String fileName = schematicName.endsWith(".schem") ? schematicName : schematicName + ".schem";
+                plugin.getSchematicService().paste(fileName, is.getCenter());
+                // Remember schematic name for regen
+                ((me.reil.skybound.core.island.IslandImpl) is).setSchematicName(fileName);
+                // Find safe spawn: highest block at center + 1
+                Location home = is.getCenter().clone();
+                home.setY(home.getWorld().getHighestBlockYAt(home.getBlockX(), home.getBlockZ()) + 1);
+                home.setX(home.getBlockX() + 0.5);
+                home.setZ(home.getBlockZ() + 0.5);
+                is.setHome(home);
+                p.teleport(is.getHome());
+                l().send(p, "island.created");
+            } else {
+                l().send(p, "island.cannot-create");
+            }
         } else { new IslandCreateMenu(p, plugin).open(); }
     }
     private void cmdHome(Player p) { if (noIsland(p)) return; p.teleport(getIsland(p).getHome()); l().send(p, "island.teleported-home"); }
@@ -163,7 +178,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
     private void cmdBiome(Player p, String[] args) { if (noIsland(p)) return; if (args.length < 2) { new BiomeSelectMenu(p, plugin, getIsland(p)).open(); return; } org.bukkit.block.Biome b = plugin.getBiomeService().parseBiome(args[1]); if (b == null) { l().send(p, "biome.invalid", "{biome}", args[1]); return; } l().send(p, "biome.changing"); plugin.getBiomeService().changeBiome(getIsland(p), b); l().send(p, "biome.changed", "{biome}", b.name()); }
     private void cmdLogs(Player p) { if (noIsland(p)) return; java.util.List<me.reil.skybound.core.island.IslandLogEntry> logs = plugin.getIslandLogManager().getLogs(getIsland(p).getId(), 10); if (logs.isEmpty()) { l().send(p, "logs.empty"); return; } l().send(p, "logs.header"); for (me.reil.skybound.core.island.IslandLogEntry e : logs) { long ago = (System.currentTimeMillis() - e.getTimestamp()) / 1000L; String t = ago < 60 ? ago + "s" : (ago < 3600 ? (ago/60) + "m" : (ago/3600) + "h"); l().send(p, "logs.entry", "{time}", t, "{player}", e.getPlayerName(), "{action}", e.getAction().name().toLowerCase()); } }
     private void cmdDelete(Player p) { if (noIsland(p)) return; Island is = getIsland(p); if (!is.getOwner().equals(p.getUniqueId())) { l().send(p, "island.owner-only"); return; } boolean need = plugin.getConfirmationManager().requestConfirmation(p.getUniqueId(), "delete"); if (need) { l().send(p, "confirm.delete"); return; } plugin.getIslandManager().deleteIsland(is.getId()); plugin.getIslandChestManager().removeChest(is.getId()); l().send(p, "island.deleted"); }
-    private void cmdRegen(Player p, String[] args) { if (noIsland(p)) return; Island is = getIsland(p); if (!is.getOwner().equals(p.getUniqueId())) { l().send(p, "island.owner-only"); return; } boolean need = plugin.getConfirmationManager().requestConfirmation(p.getUniqueId(), "regen"); if (need) { l().send(p, "confirm.regen"); return; } String s = args.length > 1 ? args[1] : "default"; plugin.getIslandManager().regenerateIsland(is.getId(), s); plugin.getSchematicService().paste(s + ".schem", is.getCenter()); p.teleport(is.getHome()); l().send(p, "island.regenerated"); }
+    private void cmdRegen(Player p, String[] args) { if (noIsland(p)) return; Island is = getIsland(p); if (!is.getOwner().equals(p.getUniqueId())) { l().send(p, "island.owner-only"); return; } boolean need = plugin.getConfirmationManager().requestConfirmation(p.getUniqueId(), "regen"); if (need) { l().send(p, "confirm.regen"); return; } String s; if (args.length > 1) { s = args[1]; } else { String saved = ((me.reil.skybound.core.island.IslandImpl) is).getSchematicName(); s = (saved != null && !saved.isEmpty()) ? saved : "desert.schem"; } String fileName = s.endsWith(".schem") || s.endsWith(".schematic") ? s : s + ".schem"; plugin.getIslandManager().regenerateIsland(is.getId(), fileName); plugin.getSchematicService().paste(fileName, is.getCenter()); org.bukkit.Location home = is.getCenter().clone(); home.setY(home.getWorld().getHighestBlockYAt(home.getBlockX(), home.getBlockZ()) + 1); home.setX(home.getBlockX() + 0.5); home.setZ(home.getBlockZ() + 0.5); is.setHome(home); p.teleport(is.getHome()); l().send(p, "island.regenerated"); }
     private void cmdPrestige(Player p) { if (noIsland(p)) return; Island is = getIsland(p); if (!is.getOwner().equals(p.getUniqueId())) { l().send(p, "island.owner-only"); return; } me.reil.skybound.core.island.PrestigeManager pm = plugin.getPrestigeManager(); if (!pm.canPrestige(is)) { int cur = pm.getPrestigeLevel(is.getId()); if (cur >= pm.getMaxPrestige()) l().send(p, "prestige.max", "{current}", String.valueOf(cur), "{max}", String.valueOf(pm.getMaxPrestige())); else l().send(p, "prestige.cannot-level", "{level}", String.valueOf(pm.getMinLevelToPrestige()), "{current}", String.valueOf(is.getLevel())); return; } boolean need = plugin.getConfirmationManager().requestConfirmation(p.getUniqueId(), "prestige"); if (need) { int next = pm.getPrestigeLevel(is.getId()) + 1; l().send(p, "prestige.info", "{level}", String.valueOf(next), "{percent}", String.format("%.0f", next * 10.0)); l().send(p, "confirm.prestige"); return; } pm.prestige(p, is); int nl = pm.getPrestigeLevel(is.getId()); l().send(p, "prestige.success", "{percent}", String.format("%.0f", (pm.getMultiplier(is.getId()) - 1.0) * 100)); Bukkit.broadcastMessage(l().get("prestige.broadcast", "{player}", p.getName(), "{level}", String.valueOf(nl))); }
     private void cmdHelp(Player p) { l().send(p, "help.header"); l().send(p, "help.create"); l().send(p, "help.home"); l().send(p, "help.sethome"); l().send(p, "help.invite"); l().send(p, "help.kick"); l().send(p, "help.leave"); l().send(p, "help.visit"); l().send(p, "help.lock"); l().send(p, "help.top"); l().send(p, "help.bank"); l().send(p, "help.shop"); l().send(p, "help.missions"); l().send(p, "help.upgrades"); l().send(p, "help.boosters"); l().send(p, "help.warp"); l().send(p, "help.value"); l().send(p, "help.level"); l().send(p, "help.biome"); l().send(p, "help.autosell"); l().send(p, "help.chest"); l().send(p, "help.prestige"); l().send(p, "help.settings"); }
 

@@ -10,11 +10,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.lang.reflect.Method;
+import java.io.FileInputStream;
 
 /**
  * Schematic paste service.
- * Tries WorldEdit/FAWE first, falls back to a simple platform.
+ * Tries WorldEdit/FAWE first (direct API), falls back to a simple platform.
  */
 public final class SchematicService {
 
@@ -30,6 +30,24 @@ public final class SchematicService {
         }
         this.worldEditAvailable = plugin.getServer().getPluginManager().isPluginEnabled("WorldEdit")
                 || plugin.getServer().getPluginManager().isPluginEnabled("FastAsyncWorldEdit");
+        // Extract default schematics from jar
+        extractDefaults();
+    }
+
+    private void extractDefaults() {
+        String[] defaults = {"desert.schem", "desert_end.schem", "desert_nether.schem",
+                "jungle.schem", "jungle_end.schem", "jungle_nether.schem",
+                "mushroom.schem", "mushroom_end.schem", "mushroom_nether.schem"};
+        for (String name : defaults) {
+            File target = new File(schematicsFolder, name);
+            if (!target.exists()) {
+                try {
+                    plugin.saveResource("schematics/" + name, false);
+                } catch (Exception e) {
+                    plugin.getLogger().fine("Schematic not in jar: " + name);
+                }
+            }
+        }
     }
 
     /**
@@ -61,21 +79,43 @@ public final class SchematicService {
 
     private boolean pasteWithWorldEdit(File file, Location location) {
         try {
-            // Try FAWE/WE API via reflection to avoid hard dependency
-            Class<?> clipboardFormatClass = Class.forName("com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats");
-            Method findByFile = clipboardFormatClass.getMethod("findByFile", File.class);
-            Object format = findByFile.invoke(null, file);
-
+            // This code only runs if WorldEdit classes are available
+            com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat format =
+                    com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats.findByFile(file);
             if (format == null) {
-                plugin.getLogger().warning("WorldEdit cannot read schematic: " + file.getName());
+                plugin.getLogger().warning("Unknown schematic format: " + file.getName());
                 createFallbackIsland(location);
                 return true;
             }
 
-            // Full WE paste logic would go here
-            // For now, log and use fallback
-            plugin.getLogger().info("WorldEdit schematic paste: " + file.getName());
-            // TODO: Complete WorldEdit clipboard paste implementation
+            com.sk89q.worldedit.extent.clipboard.Clipboard clipboard;
+            try (FileInputStream fis = new FileInputStream(file);
+                 com.sk89q.worldedit.extent.clipboard.io.ClipboardReader reader = format.getReader(fis)) {
+                clipboard = reader.read();
+            }
+
+            com.sk89q.worldedit.world.World weWorld =
+                    com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(location.getWorld());
+
+            try (com.sk89q.worldedit.EditSession editSession =
+                         com.sk89q.worldedit.WorldEdit.getInstance().newEditSession(weWorld)) {
+
+                com.sk89q.worldedit.function.operation.Operation operation =
+                        new com.sk89q.worldedit.session.ClipboardHolder(clipboard)
+                                .createPaste(editSession)
+                                .to(com.sk89q.worldedit.math.BlockVector3.at(
+                                        location.getBlockX(), location.getBlockY(), location.getBlockZ()))
+                                .ignoreAirBlocks(false)
+                                .build();
+
+                com.sk89q.worldedit.function.operation.Operations.complete(operation);
+            }
+
+            plugin.getLogger().info("Pasted schematic: " + file.getName() + " at " +
+                    location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ());
+            return true;
+        } catch (NoClassDefFoundError e) {
+            plugin.getLogger().warning("WorldEdit API not available: " + e.getMessage());
             createFallbackIsland(location);
             return true;
         } catch (Exception e) {

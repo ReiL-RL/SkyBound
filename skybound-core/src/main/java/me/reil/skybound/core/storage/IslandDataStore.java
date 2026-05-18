@@ -56,6 +56,9 @@ public final class IslandDataStore {
             Location home = deserializeLocation(is.getConfigurationSection("home"));
             if (home != null) island.setHome(home);
 
+            // Schematic name
+            island.setSchematicName(is.getString("schematic-name", null));
+
             // Members
             ConfigurationSection members = is.getConfigurationSection("members");
             if (members != null) {
@@ -107,6 +110,7 @@ public final class IslandDataStore {
             cfg.set(path + ".radius", island.getRadius());
             cfg.set(path + ".bank-balance", island.getBankBalance());
             cfg.set(path + ".locked", island.isLocked());
+            cfg.set(path + ".schematic-name", island.getSchematicName());
 
             serializeLocation(cfg, path + ".center", island.getCenter());
             serializeLocation(cfg, path + ".home", island.getHome());

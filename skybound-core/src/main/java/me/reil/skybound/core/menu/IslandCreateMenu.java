@@ -40,7 +40,7 @@ public final class IslandCreateMenu extends Menu {
 
     @Override
     public int getSize() {
-        return 27;
+        return 45;
     }
 
     @Override
@@ -53,8 +53,8 @@ public final class IslandCreateMenu extends Menu {
             inventory.setItem(i, border);
         }
 
-        // Place schematic options in center
-        int[] slots = {10, 11, 12, 13, 14, 15, 16};
+        // Place schematic options
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
         for (int i = 0; i < options.size() && i < slots.length; i++) {
             SchematicOption opt = options.get(i);
             ItemStack item = new ItemStack(opt.icon);
@@ -78,7 +78,7 @@ public final class IslandCreateMenu extends Menu {
     @Override
     public void onClick(InventoryClickEvent event) {
         int slot = event.getSlot();
-        int[] slots = {10, 11, 12, 13, 14, 15, 16};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
 
         for (int i = 0; i < options.size() && i < slots.length; i++) {
             if (slot == slots[i]) {
@@ -89,6 +89,17 @@ public final class IslandCreateMenu extends Menu {
                 Island island = plugin.getIslandManager().createIsland(player, opt.schematicFile);
                 if (island != null) {
                     plugin.getSchematicService().paste(opt.schematicFile, island.getCenter());
+
+                    // Remember schematic name for regen
+                    ((me.reil.skybound.core.island.IslandImpl) island).setSchematicName(opt.schematicFile);
+
+                    // Find safe spawn: highest block at center + 1
+                    org.bukkit.Location home = island.getCenter().clone();
+                    home.setY(home.getWorld().getHighestBlockYAt(home.getBlockX(), home.getBlockZ()) + 1);
+                    home.setX(home.getBlockX() + 0.5);
+                    home.setZ(home.getBlockZ() + 0.5);
+                    island.setHome(home);
+
                     player.teleport(island.getHome());
                     player.sendMessage("");
                     player.sendMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "\u2726 Island Created! \u2726");
