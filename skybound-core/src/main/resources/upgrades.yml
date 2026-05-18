@@ -1,0 +1,77 @@
+# SkyBound - Конфигурация улучшений
+
+upgrades:
+  island_size:
+    display-name: "&aРазмер острова"
+    icon: GRASS_BLOCK
+    type: ISLAND_SIZE
+    levels:
+      1: { cost: 10000, value: 10 }
+      2: { cost: 25000, value: 20 }
+      3: { cost: 50000, value: 30 }
+      4: { cost: 100000, value: 40 }
+      5: { cost: 200000, value: 50 }
+
+  team_size:
+    display-name: "&bРазмер команды"
+    icon: PLAYER_HEAD
+    type: TEAM_SIZE
+    levels:
+      1: { cost: 5000, value: 1 }
+      2: { cost: 15000, value: 2 }
+      3: { cost: 35000, value: 3 }
+      4: { cost: 75000, value: 4 }
+
+  generator_tier:
+    display-name: "&eУровень генератора"
+    icon: DIAMOND_ORE
+    type: GENERATOR_TIER
+    levels:
+      1: { cost: 20000, value: 1 }
+      2: { cost: 50000, value: 2 }
+      3: { cost: 150000, value: 3 }
+
+  hopper_limit:
+    display-name: "&7Лимит воронок"
+    icon: HOPPER
+    type: HOPPER_LIMIT
+    levels:
+      1: { cost: 8000, value: 32 }
+      2: { cost: 20000, value: 64 }
+      3: { cost: 50000, value: 128 }
+
+  crop_growth:
+    display-name: "&aСкорость роста"
+    icon: WHEAT
+    type: CROP_GROWTH
+    levels:
+      1: { cost: 12000, value: 1.5 }
+      2: { cost: 30000, value: 2.0 }
+      3: { cost: 70000, value: 3.0 }
+
+  spawner_rate:
+    display-name: "&cСкорость спавнеров"
+    icon: SPAWNER
+    type: SPAWNER_RATE
+    levels:
+      1: { cost: 25000, value: 1.5 }
+      2: { cost: 60000, value: 2.0 }
+      3: { cost: 150000, value: 3.0 }
+
+  entity_limit:
+    display-name: "&dЛимит существ"
+    icon: PIG_SPAWN_EGG
+    type: ENTITY_LIMIT
+    levels:
+      1: { cost: 10000, value: 50 }
+      2: { cost: 25000, value: 100 }
+      3: { cost: 60000, value: 200 }
+
+  mob_drop:
+    display-name: "&6Множитель дропа"
+    icon: ROTTEN_FLESH
+    type: MOB_DROP
+    levels:
+      1: { cost: 15000, value: 1.5 }
+      2: { cost: 40000, value: 2.0 }
+      3: { cost: 100000, value: 3.0 }

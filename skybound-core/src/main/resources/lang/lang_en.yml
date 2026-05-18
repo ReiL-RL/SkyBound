@@ -1,0 +1,92 @@
+# SkyBound English Language File
+prefix: "&6&lSkyBound &7| "
+
+# Island
+island.created: "&aIsland created! Welcome home."
+island.deleted: "&cIsland deleted permanently."
+island.regenerated: "&aIsland regenerated!"
+island.no-island: "&cYou don't have an island."
+island.already-has: "&cYou already have an island!"
+island.teleported-home: "&aTeleported to your island."
+island.home-set: "&aIsland home set."
+island.not-on-island: "&cYou must be on your island."
+island.locked: "&c&lIsland locked."
+island.unlocked: "&a&lIsland unlocked."
+island.renamed: "&aIsland renamed to: &e{name}"
+island.visit-locked: "&cThat island is locked."
+island.visited: "&aTeleported to {player}'s island."
+island.no-target-island: "&cThat player doesn't have an island."
+island.level-up: "&6&lIsland Level Up! &e{old} &7→ &a{new}"
+island.void-fall: "&eYou fell into the void and were teleported home."
+
+# Team
+team.invited: "&aInvite sent to {player}."
+team.invite-received: "&a{player} invited you! Use &e/is accept &ato join."
+team.accepted: "&aYou joined the island!"
+team.denied: "&eInvite denied."
+team.kicked: "&aPlayer kicked."
+team.kicked-target: "&cYou were kicked from the island."
+team.left: "&eYou left the island."
+team.promoted: "&aPlayer promoted."
+team.demoted: "&aPlayer demoted."
+team.transferred: "&aOwnership transferred to {player}."
+team.cannot-kick: "&cCannot kick that player."
+team.cannot-promote: "&cCannot promote."
+team.cannot-demote: "&cCannot demote."
+team.no-invites: "&cNo pending invites."
+team.owner-cannot-leave: "&cOwners cannot leave. Use /is delete or /is transfer."
+team.trusted: "&a{player} is now trusted."
+team.untrusted: "&e{player} untrusted."
+team.coop-added: "&a{player} added as co-op."
+
+# Bank
+bank.deposited: "&aDeposited ${amount}"
+bank.withdrawn: "&aWithdrew ${amount}"
+bank.cannot-deposit: "&cCannot deposit. Check balance or bank limit."
+bank.cannot-withdraw: "&cNot enough in the bank."
+
+# Shop
+shop.purchased: "&aPurchased {amount}x {item}"
+shop.sold: "&aSold {amount}x {item}"
+shop.no-money: "&cNot enough money!"
+shop.no-items: "&cYou don't have enough items!"
+
+# Upgrades
+upgrade.purchased: "&aUpgrade purchased!"
+upgrade.cannot: "&cCannot purchase. Check bank balance or max level."
+
+# Boosters
+booster.activated: "&aBooster activated!"
+booster.cannot: "&cCannot activate. Check bank balance."
+
+# Missions
+mission.completed: "&a&lMission completed: &e{name}"
+mission.claimed: "&aRewards claimed for: &e{name}"
+
+# Warps
+warp.set: "&aWarp set: {name}"
+warp.removed: "&eWarp removed: {name}"
+warp.not-found: "&cWarp not found: {name}"
+warp.max-reached: "&cMax warps reached."
+warp.teleported: "&aTeleported to warp: {name}"
+
+# Protection
+protection.cannot-break: "&cYou cannot break blocks here."
+protection.cannot-place: "&cYou cannot place blocks here."
+protection.cannot-interact: "&cYou cannot interact here."
+
+# Portal
+portal.nether-disabled: "&cNether is disabled."
+portal.end-disabled: "&cThe End is disabled."
+portal.nether-locked: "&cNether unlocks at island level {level}."
+portal.end-locked: "&cThe End unlocks at island level {level}."
+portal.no-island: "&cYou need an island to use portals here."
+
+# Flight
+flight.enabled: "&b&lFlight enabled on your island."
+flight.disabled: "&7Flight disabled."
+
+# General
+player-not-found: "&cPlayer not found."
+no-permission: "&cNo permission."
+unknown-command: "&cUnknown command. Use /is help."

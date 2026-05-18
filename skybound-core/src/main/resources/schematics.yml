@@ -1,0 +1,32 @@
+# SkyBound - Конфигурация схематик
+# Положите .schem или .schematic файлы в plugins/SkyBound/schematics/
+
+schematics:
+  default:
+    display-name: "&a\u2726 Классический остров"
+    file: "default.schem"
+    icon: GRASS_BLOCK
+    description:
+      - "&7Классический скайблок остров"
+      - "&7с деревом и сундуком."
+  desert:
+    display-name: "&e\u2726 Пустынный остров"
+    file: "desert.schem"
+    icon: SAND
+    description:
+      - "&7Песчаный остров"
+      - "&7с кактусом."
+  nether:
+    display-name: "&c\u2726 Адский остров"
+    file: "nether.schem"
+    icon: NETHERRACK
+    description:
+      - "&7Адский остров"
+      - "&7с ресурсами незера."
+  mushroom:
+    display-name: "&d\u2726 Грибной остров"
+    file: "mushroom.schem"
+    icon: RED_MUSHROOM_BLOCK
+    description:
+      - "&7Мицелиевый остров"
+      - "&7с гигантскими грибами."

@@ -1,0 +1,56 @@
+# SkyBound - Конфигурация бустеров
+
+boosters:
+  farming:
+    display-name: "&aБустер фермерства"
+    description: "&7Удваивает скорость роста растений"
+    icon: WHEAT
+    type: FARMING
+    duration-seconds: 600
+    cost: 5000.0
+    multiplier: 2.0
+
+  experience:
+    display-name: "&bБустер опыта"
+    description: "&7Удваивает получение опыта"
+    icon: EXPERIENCE_BOTTLE
+    type: EXPERIENCE
+    duration-seconds: 600
+    cost: 7500.0
+    multiplier: 2.0
+
+  spawner:
+    display-name: "&cБустер спавнеров"
+    description: "&7Удваивает скорость спавнеров"
+    icon: SPAWNER
+    type: SPAWNER
+    duration-seconds: 600
+    cost: 10000.0
+    multiplier: 2.0
+
+  generator:
+    display-name: "&eБустер генератора"
+    description: "&7Удваивает скорость генератора"
+    icon: DIAMOND_ORE
+    type: GENERATOR
+    duration-seconds: 600
+    cost: 8000.0
+    multiplier: 2.0
+
+  flight:
+    display-name: "&fБустер полёта"
+    description: "&7Включает полёт на 30 минут"
+    icon: ELYTRA
+    type: FLIGHT
+    duration-seconds: 1800
+    cost: 15000.0
+    multiplier: 1.0
+
+  island_xp:
+    display-name: "&dБустер XP острова"
+    description: "&7Удваивает получение XP острова"
+    icon: NETHER_STAR
+    type: ISLAND_XP
+    duration-seconds: 900
+    cost: 12000.0
+    multiplier: 2.0

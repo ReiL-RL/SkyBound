@@ -1,0 +1,73 @@
+# SkyBound Core Configuration
+# Version: 2.0.0
+
+language: ru
+autosave-seconds: 120
+
+# Storage backend: yaml or mysql
+storage:
+  mode: yaml
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    database: "skybound"
+    username: "root"
+    password: ""
+    table-prefix: "sb_"
+
+# Island world settings
+island-world:
+  name: skybound_islands
+  spacing: 256
+  default-radius: 60
+  base-y: 100
+  # Dimensional islands (like IridiumSkyblock)
+  nether:
+    enabled: true
+    unlock-level: 10
+  end:
+    enabled: true
+    unlock-level: 25
+
+# Island defaults
+island:
+  max-team-size: 4
+  max-warps: 3
+  lock-default: false
+  xp-per-level: 100
+
+
+
+# Ore generator
+generator:
+  enabled: true
+
+# Block values for island worth calculation
+block-values:
+  DIAMOND_BLOCK: 100
+  EMERALD_BLOCK: 150
+  GOLD_BLOCK: 50
+  IRON_BLOCK: 25
+  COAL_BLOCK: 10
+  LAPIS_BLOCK: 30
+  REDSTONE_BLOCK: 20
+  NETHERITE_BLOCK: 500
+  BEACON: 1000
+  SPAWNER: 200
+
+# XP settings
+xp:
+  # If island-core addon is installed, disable passive XP gain
+  disable-passive-if-addon: true
+
+# Island Core addon integration
+# When Island Core addon is installed, these features are handled by core blocks only
+island-core:
+  disable-booster-menu: true
+  disable-upgrade-menu: true
+  disable-passive-xp: true
+
+# Economy
+economy:
+  currency-name: "coin"
+  currency-name-plural: "coins"

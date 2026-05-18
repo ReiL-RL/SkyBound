@@ -1,0 +1,32 @@
+name: SkyBound
+version: ${project.version}
+main: me.reil.skybound.core.SkyBoundPlugin
+api-version: 1.16
+author: Reil
+description: Modular SkyBlock core with addon architecture
+softdepend: [Vault, PlaceholderAPI, WorldEdit, FastAsyncWorldEdit, SopLib, VoidRift]
+commands:
+  is:
+    description: Main island command
+    usage: /is [subcommand]
+    aliases: [island, sb]
+  sbadmin:
+    description: SkyBound admin command
+    usage: /sbadmin [subcommand]
+    aliases: [skyadmin]
+permissions:
+  skybound.admin:
+    description: Full admin access
+    default: op
+  skybound.admin.bypass:
+    description: Bypass island protection
+    default: op
+  skybound.island.create:
+    description: Create an island
+    default: true
+  skybound.island.home:
+    description: Teleport to island
+    default: true
+  skybound.island.invite:
+    description: Invite players
+    default: true

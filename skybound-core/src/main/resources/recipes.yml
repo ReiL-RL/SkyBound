@@ -1,0 +1,42 @@
+# SkyBound Custom Recipes
+# Supports shaped and shapeless recipes.
+# Use material names from Bukkit Material enum.
+# For custom items (future): use sop:item_id syntax.
+
+recipes:
+  island_key:
+    type: shaped
+    shape: [" D ", "DED", " D "]
+    ingredients:
+      D: DIAMOND
+      E: EMERALD
+    result:
+      material: TRIPWIRE_HOOK
+      name: "&6Ключ Острова"
+      amount: 1
+      lore:
+        - "&7Открывает секретные сундуки"
+        - "&7на вашем острове."
+
+  compressed_cobble:
+    type: shaped
+    shape: ["CCC", "CCC", "CCC"]
+    ingredients:
+      C: COBBLESTONE
+    result:
+      material: STONE
+      name: "&7Сжатый булыжник"
+      amount: 1
+
+  island_compass:
+    type: shapeless
+    ingredients:
+      - COMPASS
+      - ENDER_PEARL
+      - GOLD_INGOT
+    result:
+      material: COMPASS
+      name: "&bКомпас острова"
+      amount: 1
+      lore:
+        - "&7Указывает путь домой."

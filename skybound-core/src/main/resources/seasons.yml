@@ -1,0 +1,13 @@
+# SkyBound Seasons Configuration
+# Seasons are time periods with leaderboard rewards.
+# When a season ends, top islands receive rewards.
+
+seasons:
+  enabled: true
+  duration-days: 30
+  auto-reset-islands: false
+  rewards:
+    1: ["give {player} netherite_ingot 5", "say {player} занял 1 место!"]
+    2: ["give {player} diamond 16"]
+    3: ["give {player} gold_ingot 32"]
+  announce-end: true
