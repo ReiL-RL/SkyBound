@@ -81,6 +81,10 @@ public final class IslandWarpCommandHandler implements IslandSubCommandHandler {
         }
 
         String warpName = args[1];
+        if (!isValidWarpName(warpName)) {
+            context.lang().send(player, "warp.invalid-name");
+            return;
+        }
         int maxWarps = plugin.getCoreConfig().getMaxWarps();
         if (island.getWarps().size() >= maxWarps && !island.getWarps().containsKey(warpName)) {
             context.lang().send(player, "warp.max-reached", "{max}", String.valueOf(maxWarps));
@@ -88,6 +92,7 @@ public final class IslandWarpCommandHandler implements IslandSubCommandHandler {
         }
 
         island.setWarp(warpName, player.getLocation());
+        plugin.getIslandManager().saveData();
         context.lang().send(player, "warp.set", "{name}", warpName);
         plugin.getIslandLogManager().log(island.getId(), player.getUniqueId(), player.getName(),
                 IslandLogEntry.LogAction.WARP_SET, warpName);
@@ -108,9 +113,21 @@ public final class IslandWarpCommandHandler implements IslandSubCommandHandler {
         }
 
         String warpName = args[1];
+        if (!isValidWarpName(warpName)) {
+            context.lang().send(player, "warp.invalid-name");
+            return;
+        }
         island.removeWarp(warpName);
+        plugin.getIslandManager().saveData();
         context.lang().send(player, "warp.removed", "{name}", warpName);
         plugin.getIslandLogManager().log(island.getId(), player.getUniqueId(), player.getName(),
                 IslandLogEntry.LogAction.WARP_REMOVE, warpName);
+    }
+
+    private boolean isValidWarpName(String name) {
+        return name != null
+                && name.length() >= 1
+                && name.length() <= 24
+                && name.matches("[A-Za-z0-9_\\-]+");
     }
 }

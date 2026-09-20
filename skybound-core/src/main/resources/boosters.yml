@@ -1,4 +1,19 @@
 # SkyBound - Конфигурация бустеров
+#
+# Бустеры покупаются за деньги из банка острова и временно усиливают механику.
+# Активные бустеры сохраняются и переживают рестарт сервера.
+#
+# Поля бустера:
+#   display-name      — название в GUI, поддерживает & цвета.
+#   description       — описание в GUI.
+#   icon              — Bukkit Material иконки.
+#   type              — тип бустера для API/аддонов.
+#                       Доступные базовые типы: FARMING, EXPERIENCE, SPAWNER,
+#                       GENERATOR, FLIGHT, ISLAND_XP, CUSTOM.
+#   duration-seconds  — длительность в секундах. 600 = 10 минут.
+#   cost              — цена активации, списывается из банка острова.
+#   multiplier        — множитель эффекта. Для flight обычно 1.0,
+#                       потому что важен сам факт активного бустера.
 
 boosters:
   farming:
@@ -6,18 +21,18 @@ boosters:
     description: "&7Удваивает скорость роста растений"
     icon: WHEAT
     type: FARMING
-    duration-seconds: 600
-    cost: 5000.0
-    multiplier: 2.0
+    duration-seconds: 900
+    cost: 12000.0
+    multiplier: 1.75
 
   experience:
     display-name: "&bБустер опыта"
     description: "&7Удваивает получение опыта"
     icon: EXPERIENCE_BOTTLE
     type: EXPERIENCE
-    duration-seconds: 600
-    cost: 7500.0
-    multiplier: 2.0
+    duration-seconds: 900
+    cost: 15000.0
+    multiplier: 1.75
 
   spawner:
     display-name: "&cБустер спавнеров"
@@ -25,17 +40,17 @@ boosters:
     icon: SPAWNER
     type: SPAWNER
     duration-seconds: 600
-    cost: 10000.0
-    multiplier: 2.0
+    cost: 22000.0
+    multiplier: 1.75
 
   generator:
     display-name: "&eБустер генератора"
     description: "&7Удваивает скорость генератора"
     icon: DIAMOND_ORE
     type: GENERATOR
-    duration-seconds: 600
-    cost: 8000.0
-    multiplier: 2.0
+    duration-seconds: 900
+    cost: 18000.0
+    multiplier: 1.75
 
   flight:
     display-name: "&fБустер полёта"
@@ -43,7 +58,7 @@ boosters:
     icon: ELYTRA
     type: FLIGHT
     duration-seconds: 1800
-    cost: 15000.0
+    cost: 30000.0
     multiplier: 1.0
 
   island_xp:
@@ -52,5 +67,5 @@ boosters:
     icon: NETHER_STAR
     type: ISLAND_XP
     duration-seconds: 900
-    cost: 12000.0
-    multiplier: 2.0
+    cost: 25000.0
+    multiplier: 1.75

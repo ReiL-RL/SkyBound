@@ -18,7 +18,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -101,15 +100,23 @@ public final class PrestigeShopManager {
     }
 
     public void addTokens(String islandId, int amount) {
+        if (islandId == null || islandId.isEmpty() || amount <= 0) return;
         Integer cur = tokens.get(islandId);
-        tokens.put(islandId, (cur == null ? 0 : cur) + amount);
+        long next = (long) (cur == null ? 0 : cur) + amount;
+        tokens.put(islandId, next > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) next);
         saveTokens();
     }
 
     public boolean spendTokens(String islandId, int amount) {
+        if (islandId == null || islandId.isEmpty() || amount <= 0) return false;
         int cur = getTokens(islandId);
         if (cur < amount) return false;
-        tokens.put(islandId, cur - amount);
+        int remaining = cur - amount;
+        if (remaining <= 0) {
+            tokens.remove(islandId);
+        } else {
+            tokens.put(islandId, remaining);
+        }
         saveTokens();
         return true;
     }
@@ -126,8 +133,16 @@ public final class PrestigeShopManager {
 
     /** Remove up to {@code amount} tokens (admin take). Never goes below 0. */
     public void removeTokens(String islandId, int amount) {
+        if (amount <= 0) return;
         int cur = getTokens(islandId);
         setTokens(islandId, Math.max(0, cur - amount));
+    }
+
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        if (tokens.remove(islandId) != null) {
+            saveTokens();
+        }
     }
 
     private void loadShop() {
@@ -166,7 +181,8 @@ public final class PrestigeShopManager {
             String name = sec.getString(id + ".name", id);
             List<String> lore = sec.getStringList(id + ".lore");
             int cost = sec.getInt(id + ".cost", 1);
-            List<String> commands = sec.getStringList(id + ".commands");
+            if (cost < 1) cost = 1;
+            List<String> commands = sanitizeCommands(sec.getStringList(id + ".commands"));
             List<Reward> rewards = parseRewards(sec.getMapList(id + ".rewards"));
             items.put(id, new PrestigeItem(id, mat, name, lore, cost, rewards, commands));
         }
@@ -186,6 +202,7 @@ public final class PrestigeShopManager {
                 continue;
             }
             int amount = (rm.get("amount") instanceof Number) ? ((Number) rm.get("amount")).intValue() : 1;
+            amount = Math.max(1, Math.min(amount, rmat.getMaxStackSize()));
 
             List<String> ench = new ArrayList<String>();
             Object eo = rm.get("enchantments");
@@ -225,8 +242,10 @@ public final class PrestigeShopManager {
             rw.put("material", "BEACON");
             rw.put("amount", 1);
             y.set("items.beacon.rewards", java.util.Arrays.asList(rw));
-            y.save(file);
-        } catch (IOException ignored) {}
+            me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, y, file, "prestige-shop.yml");
+        } catch (RuntimeException e) {
+            plugin.getLogger().warning("Could not create default prestige-shop.yml: " + e.getMessage());
+        }
     }
 
     // === Granting purchases ===
@@ -242,7 +261,7 @@ public final class PrestigeShopManager {
             if (stack != null) giveOrDrop(player, stack);
         }
         for (String cmd : item.commands) {
-            String resolved = normalizeCommand(cmd).replace("{player}", player.getName());
+            String resolved = cmd.replace("{player}", player.getName());
             if (!resolved.isEmpty()) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
             }
@@ -274,6 +293,7 @@ public final class PrestigeShopManager {
                     int lvl;
                     try { lvl = Integer.parseInt(parts[1].trim()); }
                     catch (NumberFormatException ex) { continue; }
+                    if (lvl < 1) continue;
                     if (ench != null) meta.addEnchant(ench, lvl, true);
                 }
                 item.setItemMeta(meta);
@@ -324,10 +344,28 @@ public final class PrestigeShopManager {
     private static String normalizeCommand(String cmd) {
         if (cmd == null) return "";
         String trimmed = cmd.trim();
+        if (trimmed.startsWith("/")) {
+            trimmed = trimmed.substring(1).trim();
+        }
         if (trimmed.toLowerCase().startsWith("give ")) {
             return "minecraft:" + trimmed;
         }
         return trimmed;
+    }
+
+    private List<String> sanitizeCommands(List<String> raw) {
+        List<String> commands = new ArrayList<String>();
+        for (String command : raw) {
+            String sanitized = normalizeCommand(command);
+            if (sanitized.length() > 256) {
+                plugin.getLogger().warning("Ignoring overlong prestige-shop command.");
+                continue;
+            }
+            if (!sanitized.isEmpty()) {
+                commands.add(sanitized);
+            }
+        }
+        return commands;
     }
 
     private void loadTokens() {
@@ -337,21 +375,20 @@ public final class PrestigeShopManager {
         ConfigurationSection sec = cfg.getConfigurationSection("tokens");
         if (sec == null) return;
         for (String key : sec.getKeys(false)) {
-            tokens.put(key, sec.getInt(key));
+            int value = sec.getInt(key);
+            if (value > 0) {
+                tokens.put(key, value);
+            }
         }
     }
 
     public void saveTokens() {
         YamlConfiguration cfg = new YamlConfiguration();
         for (Map.Entry<String, Integer> e : tokens.entrySet()) {
-            cfg.set("tokens." + e.getKey(), e.getValue());
+            if (e.getValue() != null && e.getValue() > 0) {
+                cfg.set("tokens." + e.getKey(), e.getValue());
+            }
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save prestige-tokens.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "prestige-tokens.yml");
     }
 }

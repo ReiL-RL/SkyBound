@@ -1,5 +1,24 @@
 # SkyBound Generator Tiers Configuration
 # Each tier has a required island level and ore distribution (material: weight).
+#
+# Генератор перехватывает образование COBBLESTONE/BASALT и заменяет блок
+# на случайный материал из подходящего tier.
+#
+# Как выбирается tier:
+#   required-level — минимальный уровень острова.
+#   Чем выше уровень острова, тем более высокий tier может использоваться.
+#
+# distribution:
+#   MATERIAL: weight
+# Вес — это не процент, а относительный шанс.
+# Например COBBLESTONE: 70 и IRON_ORE: 10 означает, что булыжник
+# выпадет примерно в 7 раз чаще железной руды.
+#
+# Поля tier:
+#   display-name    — имя уровня генератора в GUI/сообщениях.
+#   icon            — Bukkit Material иконки.
+#   required-level  — минимальный уровень острова.
+#   distribution    — таблица материалов и весов.
 
 tiers:
   basic:

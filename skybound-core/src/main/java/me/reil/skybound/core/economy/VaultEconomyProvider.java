@@ -39,27 +39,28 @@ public final class VaultEconomyProvider implements EconomyProvider {
     @Override
     public double getBalance(UUID playerId) {
         if (vault == null) return 0.0;
+        if (playerId == null) return 0.0;
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerId);
         return vault.getBalance(player);
     }
 
     @Override
     public boolean deposit(UUID playerId, double amount) {
-        if (vault == null || amount <= 0) return false;
+        if (vault == null || playerId == null || !isValidAmount(amount)) return false;
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerId);
         return vault.depositPlayer(player, amount).transactionSuccess();
     }
 
     @Override
     public boolean withdraw(UUID playerId, double amount) {
-        if (vault == null || amount <= 0) return false;
+        if (vault == null || playerId == null || !isValidAmount(amount)) return false;
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerId);
         return vault.withdrawPlayer(player, amount).transactionSuccess();
     }
 
     @Override
     public boolean has(UUID playerId, double amount) {
-        if (vault == null) return false;
+        if (vault == null || playerId == null || !isValidAmount(amount)) return false;
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerId);
         return vault.has(player, amount);
     }
@@ -84,5 +85,9 @@ public final class VaultEconomyProvider implements EconomyProvider {
 
     public boolean isAvailable() {
         return vault != null;
+    }
+
+    private boolean isValidAmount(double amount) {
+        return amount > 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount);
     }
 }

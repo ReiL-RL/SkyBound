@@ -12,6 +12,9 @@ public enum UpgradeType {
     /** Increases max team members. */
     TEAM_SIZE,
 
+    /** Increases island bank capacity. */
+    BANK_CAPACITY,
+
     /** Increases generator speed. */
     GENERATOR_SPEED,
 

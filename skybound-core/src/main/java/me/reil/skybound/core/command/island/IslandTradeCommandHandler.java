@@ -47,7 +47,7 @@ public final class IslandTradeCommandHandler implements IslandSubCommandHandler 
             return;
         }
 
-        if (price <= 0) {
+        if (!isValidPrice(price)) {
             context.lang().send(player, "number.price-positive");
             return;
         }
@@ -58,5 +58,9 @@ public final class IslandTradeCommandHandler implements IslandSubCommandHandler 
         } else {
             context.lang().send(player, "trade.offer-failed");
         }
+    }
+
+    private boolean isValidPrice(double price) {
+        return price > 0.0 && !Double.isNaN(price) && !Double.isInfinite(price);
     }
 }

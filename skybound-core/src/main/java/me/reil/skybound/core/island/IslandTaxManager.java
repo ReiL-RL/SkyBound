@@ -8,7 +8,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -43,22 +42,22 @@ public final class IslandTaxManager {
 
     /** Tax interval in seconds. */
     public long getIntervalSeconds() {
-        return plugin.getConfig().getLong("tax.interval-seconds", 86400L); // daily by default
+        return Math.max(60L, plugin.getConfig().getLong("tax.interval-seconds", 86400L)); // daily by default
     }
 
     /** Flat tax per island per interval. */
     public double getFlatTax() {
-        return plugin.getConfig().getDouble("tax.flat-amount", 100.0);
+        return Math.max(0.0, plugin.getConfig().getDouble("tax.flat-amount", 100.0));
     }
 
     /** Percentage of bank balance to take additionally. */
     public double getPercentTax() {
-        return plugin.getConfig().getDouble("tax.percent", 0.5); // 0.5%
+        return Math.max(0.0, plugin.getConfig().getDouble("tax.percent", 0.5)); // 0.5%
     }
 
     /** XP penalty when bank can't pay. */
     public long getXpPenalty() {
-        return plugin.getConfig().getLong("tax.xp-penalty", 100L);
+        return Math.max(0L, plugin.getConfig().getLong("tax.xp-penalty", 100L));
     }
 
     public void start() {
@@ -100,11 +99,13 @@ public final class IslandTaxManager {
                 lastChargedAt.put(island.getId(), now);
             }
         }
+        islandManager.saveData();
         save();
     }
 
     private void charge(Island island) {
         double tax = getFlatTax() + (island.getBankBalance() * getPercentTax() / 100.0);
+        if (Double.isNaN(tax) || Double.isInfinite(tax) || tax <= 0.0) return;
         double bank = island.getBankBalance();
         if (bank >= tax) {
             island.setBankBalance(bank - tax);
@@ -156,12 +157,6 @@ public final class IslandTaxManager {
         for (Map.Entry<String, Long> e : lastChargedAt.entrySet()) {
             cfg.set("last-charged." + e.getKey(), e.getValue());
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save island-tax.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "island-tax.yml");
     }
 }

@@ -1,6 +1,30 @@
 # SkyBound Missions Configuration — 100+ заданий
 # Используются ВСЕ типы условий движка миссий.
 #
+# Миссии отслеживают действия игрока и выдают награды после выполнения условий.
+# Прогресс сохраняется отдельно в data/mission-progress.yml.
+#
+# Общая структура одной миссии:
+#   mission_id:
+#     display-name: название в GUI
+#     category: категория в меню миссий
+#     icon: Bukkit Material иконки
+#     required-level: минимальный уровень острова
+#     prerequisites: список mission_id, которые нужно выполнить раньше
+#     repeatable: можно ли повторять миссию
+#     cooldown-seconds: задержка между повторениями
+#     time-limit-seconds: лимит времени на выполнение, 0 = без лимита
+#     reset: daily | weekly, если миссия должна сбрасываться по времени
+#     conditions:
+#       mode: AND | OR
+#       list: список условий
+#     rewards:
+#       money: деньги игроку через Vault
+#       island-xp: XP острову
+#       items: предметы в инвентарь
+#       commands: консольные команды
+#     lore: описание в GUI
+#
 # Condition types:
 #   BREAK_BLOCK, PLACE_BLOCK, KILL_MOB, CRAFT_ITEM, SMELT_ITEM, BREW_POTION,
 #   ENCHANT_ITEM, FISH, HARVEST, SHEAR, BREED, TAME, ISLAND_LEVEL, ISLAND_VALUE,
@@ -10,6 +34,13 @@
 # mode: AND (все условия) или OR (любое одно)
 # reset: daily | weekly (для повторяемых заданий)
 # target: материал/моб, "" — любой
+#
+# Команды rewards.commands выполняются от консоли.
+# Доступный плейсхолдер: {player}.
+# Ведущий "/" писать не нужно.
+#
+# Некорректные материалы/команды/значения пропускаются или clamp-ятся кодом,
+# чтобы один плохой пункт не ломал загрузку всего файла.
 
 missions:
 
@@ -2758,3 +2789,56 @@ missions:
         - "broadcast &5&l{player} прошёл УЛЬТИМАТИВНЫЙ ВЫЗОВ!"
     lore:
       - "&5&lСамое сложное задание сервера."
+  addon_event_participant:
+    display-name: "&b&lAddon Event Participant"
+    category: "addons"
+    icon: AMETHYST_SHARD
+    required-level: 3
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 86400
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: CUSTOM
+          target: ""
+          amount: 3
+    rewards:
+      money: 7500.0
+      island-xp: 350
+      items:
+        - material: EXPERIENCE_BOTTLE
+          amount: 16
+      commands: []
+    lore:
+      - "&7Complete any 3 custom addon events."
+      - "&8Addons should track CUSTOM mission progress through the SkyBound API."
+
+  voidrift_event_master:
+    display-name: "&5&lVoidRift Event Master"
+    category: "addons"
+    icon: END_CRYSTAL
+    required-level: 10
+    prerequisites: ["addon_event_participant"]
+    repeatable: true
+    cooldown-seconds: 604800
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: CUSTOM
+          target: ""
+          amount: 15
+    rewards:
+      money: 50000.0
+      island-xp: 2000
+      items:
+        - material: ENDER_EYE
+          amount: 16
+        - material: GOLDEN_APPLE
+          amount: 8
+      commands: []
+    lore:
+      - "&7Weekly mission for servers with event addons."
+      - "&8VoidRift bridge sends CUSTOM progress automatically."

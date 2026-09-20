@@ -3,10 +3,16 @@ package me.reil.skybound.core.island;
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.api.island.IslandRole;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +38,9 @@ public final class IslandPermissionManager {
 
     // islandId -> role -> custom permissions (island-level role config)
     private final Map<String, Map<IslandRole, Set<IslandPermission>>> islandRoleOverrides = new LinkedHashMap<String, Map<IslandRole, Set<IslandPermission>>>();
+
+    private final JavaPlugin plugin;
+    private final File dataFile;
 
     static {
         // VISITOR: nothing
@@ -111,6 +120,17 @@ public final class IslandPermissionManager {
         ROLE_DEFAULTS.put(IslandRole.OWNER, EnumSet.allOf(IslandPermission.class));
     }
 
+    public IslandPermissionManager() {
+        this.plugin = null;
+        this.dataFile = null;
+    }
+
+    public IslandPermissionManager(JavaPlugin plugin) {
+        this.plugin = plugin;
+        this.dataFile = new File(plugin.getDataFolder(), "data/island-permissions.yml");
+        load();
+    }
+
     /**
      * Check if a player has a specific permission on an island.
      * Checks: per-member override > island role override > global role default.
@@ -171,6 +191,8 @@ public final class IslandPermissionManager {
             Set<IslandPermission> denied = denials.get(playerId);
             if (denied != null) denied.remove(permission);
         }
+        cleanupMemberOverrides(islandId, playerId);
+        save();
     }
 
     /**
@@ -195,6 +217,8 @@ public final class IslandPermissionManager {
             Set<IslandPermission> granted = grants.get(playerId);
             if (granted != null) granted.remove(permission);
         }
+        cleanupMemberOverrides(islandId, playerId);
+        save();
     }
 
     /**
@@ -211,6 +235,8 @@ public final class IslandPermissionManager {
             Set<IslandPermission> perms = denials.get(playerId);
             if (perms != null) perms.remove(permission);
         }
+        cleanupMemberOverrides(islandId, playerId);
+        save();
     }
 
     /**
@@ -222,7 +248,8 @@ public final class IslandPermissionManager {
             overrides = new EnumMap<IslandRole, Set<IslandPermission>>(IslandRole.class);
             islandRoleOverrides.put(islandId, overrides);
         }
-        overrides.put(role, EnumSet.copyOf(permissions));
+        overrides.put(role, copyPermissions(permissions));
+        save();
     }
 
     /**
@@ -231,6 +258,43 @@ public final class IslandPermissionManager {
     public Set<IslandPermission> getRoleDefaults(IslandRole role) {
         Set<IslandPermission> defaults = ROLE_DEFAULTS.get(role);
         return defaults != null ? Collections.unmodifiableSet(defaults) : Collections.<IslandPermission>emptySet();
+    }
+
+    public Set<IslandPermission> getRolePermissions(String islandId, IslandRole role) {
+        Map<IslandRole, Set<IslandPermission>> overrides = islandRoleOverrides.get(islandId);
+        Set<IslandPermission> custom = overrides == null ? null : overrides.get(role);
+        if (custom != null) {
+            return Collections.unmodifiableSet(custom);
+        }
+        return getRoleDefaults(role);
+    }
+
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        boolean changed = memberGrants.remove(islandId) != null;
+        changed = memberDenials.remove(islandId) != null || changed;
+        changed = islandRoleOverrides.remove(islandId) != null || changed;
+        if (changed) {
+            save();
+        }
+    }
+
+    public void removeMember(String islandId, UUID playerId) {
+        if (islandId == null || islandId.isEmpty() || playerId == null) return;
+        boolean changed = false;
+        Map<UUID, Set<IslandPermission>> grants = memberGrants.get(islandId);
+        if (grants != null) {
+            changed = grants.remove(playerId) != null;
+            if (grants.isEmpty()) memberGrants.remove(islandId);
+        }
+        Map<UUID, Set<IslandPermission>> denials = memberDenials.get(islandId);
+        if (denials != null) {
+            changed = denials.remove(playerId) != null || changed;
+            if (denials.isEmpty()) memberDenials.remove(islandId);
+        }
+        if (changed) {
+            save();
+        }
     }
 
     /**
@@ -245,5 +309,134 @@ public final class IslandPermissionManager {
      */
     public Map<String, Map<UUID, Set<IslandPermission>>> getAllDenials() {
         return memberDenials;
+    }
+
+    private void cleanupMemberOverrides(String islandId, UUID playerId) {
+        cleanupMemberMap(memberGrants, islandId, playerId);
+        cleanupMemberMap(memberDenials, islandId, playerId);
+    }
+
+    private void cleanupMemberMap(Map<String, Map<UUID, Set<IslandPermission>>> source, String islandId, UUID playerId) {
+        Map<UUID, Set<IslandPermission>> islandMap = source.get(islandId);
+        if (islandMap == null) return;
+        Set<IslandPermission> permissions = islandMap.get(playerId);
+        if (permissions != null && permissions.isEmpty()) {
+            islandMap.remove(playerId);
+        }
+        if (islandMap.isEmpty()) {
+            source.remove(islandId);
+        }
+    }
+
+    private void load() {
+        memberGrants.clear();
+        memberDenials.clear();
+        islandRoleOverrides.clear();
+        if (dataFile == null || !dataFile.exists()) return;
+
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(dataFile);
+        loadMemberOverrides(cfg.getConfigurationSection("member-grants"), memberGrants);
+        loadMemberOverrides(cfg.getConfigurationSection("member-denials"), memberDenials);
+
+        ConfigurationSection rolesRoot = cfg.getConfigurationSection("role-overrides");
+        if (rolesRoot != null) {
+            for (String islandId : rolesRoot.getKeys(false)) {
+                ConfigurationSection islandSection = rolesRoot.getConfigurationSection(islandId);
+                if (islandSection == null) continue;
+                Map<IslandRole, Set<IslandPermission>> roleMap = new EnumMap<IslandRole, Set<IslandPermission>>(IslandRole.class);
+                for (String roleName : islandSection.getKeys(false)) {
+                    IslandRole role = parseRole(roleName);
+                    if (role == null) continue;
+                    Set<IslandPermission> permissions = parsePermissions(islandSection.getStringList(roleName));
+                    roleMap.put(role, permissions);
+                }
+                if (!roleMap.isEmpty()) {
+                    islandRoleOverrides.put(islandId, roleMap);
+                }
+            }
+        }
+    }
+
+    private void loadMemberOverrides(ConfigurationSection root, Map<String, Map<UUID, Set<IslandPermission>>> target) {
+        if (root == null) return;
+        for (String islandId : root.getKeys(false)) {
+            ConfigurationSection islandSection = root.getConfigurationSection(islandId);
+            if (islandSection == null) continue;
+            Map<UUID, Set<IslandPermission>> memberMap = new LinkedHashMap<UUID, Set<IslandPermission>>();
+            for (String uuidString : islandSection.getKeys(false)) {
+                try {
+                    UUID playerId = UUID.fromString(uuidString);
+                    Set<IslandPermission> permissions = parsePermissions(islandSection.getStringList(uuidString));
+                    if (!permissions.isEmpty()) {
+                        memberMap.put(playerId, permissions);
+                    }
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            if (!memberMap.isEmpty()) {
+                target.put(islandId, memberMap);
+            }
+        }
+    }
+
+    private void save() {
+        if (plugin == null || dataFile == null) return;
+        YamlConfiguration cfg = new YamlConfiguration();
+        saveMemberOverrides(cfg, "member-grants", memberGrants);
+        saveMemberOverrides(cfg, "member-denials", memberDenials);
+
+        for (Map.Entry<String, Map<IslandRole, Set<IslandPermission>>> islandEntry : islandRoleOverrides.entrySet()) {
+            for (Map.Entry<IslandRole, Set<IslandPermission>> roleEntry : islandEntry.getValue().entrySet()) {
+                cfg.set("role-overrides." + islandEntry.getKey() + "." + roleEntry.getKey().name(),
+                        serializePermissions(roleEntry.getValue()));
+            }
+        }
+
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "island-permissions.yml");
+    }
+
+    private void saveMemberOverrides(YamlConfiguration cfg, String root, Map<String, Map<UUID, Set<IslandPermission>>> source) {
+        for (Map.Entry<String, Map<UUID, Set<IslandPermission>>> islandEntry : source.entrySet()) {
+            for (Map.Entry<UUID, Set<IslandPermission>> playerEntry : islandEntry.getValue().entrySet()) {
+                if (!playerEntry.getValue().isEmpty()) {
+                    cfg.set(root + "." + islandEntry.getKey() + "." + playerEntry.getKey().toString(),
+                            serializePermissions(playerEntry.getValue()));
+                }
+            }
+        }
+    }
+
+    private List<String> serializePermissions(Set<IslandPermission> permissions) {
+        List<String> out = new ArrayList<String>();
+        for (IslandPermission permission : permissions) {
+            out.add(permission.name());
+        }
+        return out;
+    }
+
+    private Set<IslandPermission> parsePermissions(List<String> raw) {
+        Set<IslandPermission> out = EnumSet.noneOf(IslandPermission.class);
+        for (String value : raw) {
+            try {
+                out.add(IslandPermission.valueOf(value.toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return out;
+    }
+
+    private IslandRole parseRole(String value) {
+        try {
+            return IslandRole.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private Set<IslandPermission> copyPermissions(Set<IslandPermission> permissions) {
+        if (permissions == null || permissions.isEmpty()) {
+            return EnumSet.noneOf(IslandPermission.class);
+        }
+        return EnumSet.copyOf(permissions);
     }
 }

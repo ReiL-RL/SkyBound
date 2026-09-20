@@ -1,6 +1,7 @@
 package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.api.island.IslandRole;
 import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
@@ -105,8 +106,10 @@ public final class MemberManageMenu extends Menu {
         // === Action buttons row (slots 28-34) ===
 
         // Permissions (slot 29)
-        inventory.setItem(29, makeActionItem(Material.COMPARATOR, lang().get("menu.manage.permissions"),
-                lang().get("menu.manage.permissions-lore")));
+        if (myRole == IslandRole.OWNER) {
+            inventory.setItem(29, makeActionItem(Material.COMPARATOR, lang().get("menu.manage.permissions"),
+                    lang().get("menu.manage.permissions-lore")));
+        }
 
         // Kick (slot 31)
         inventory.setItem(31, makeActionItem(Material.BARRIER, lang().get("menu.manage.kick"),
@@ -132,9 +135,18 @@ public final class MemberManageMenu extends Menu {
                 IslandRole newRole = ASSIGNABLE_ROLES[i];
                 IslandRole currentRole = island.getMemberRole(targetId);
                 if (newRole == currentRole) return;
+                if (!canChangeRole(currentRole, newRole)) {
+                    lang().send(player, newRole.isAtLeast(currentRole) ? "team.cannot-promote" : "team.cannot-demote");
+                    return;
+                }
 
-                // Set role directly
                 island.setMemberRole(targetId, newRole);
+                if (newRole.isAtLeast(IslandRole.MEMBER)) {
+                    plugin.getIslandManager().registerMember(targetId, island.getId());
+                } else {
+                    plugin.getIslandManager().unregisterMember(targetId, island.getId());
+                }
+                plugin.getIslandManager().saveData();
                 lang().send(player, "team.role-changed", "{player}", targetName, "{role}", getRoleColor(newRole) + newRole.name());
                 Player target = Bukkit.getPlayer(targetId);
                 if (target != null) {
@@ -147,13 +159,16 @@ public final class MemberManageMenu extends Menu {
 
         switch (slot) {
             case 29: // Permissions
+                if (!island.getOwner().equals(player.getUniqueId())) {
+                    lang().send(player, "no-permission");
+                    return;
+                }
                 new MemberPermissionsMenu(player, plugin, island, targetId).open();
                 break;
 
             case 31: // Kick
                 boolean kicked = plugin.getTeamManager().kick(island, player.getUniqueId(), targetId);
                 if (kicked) {
-                    plugin.getIslandManager().unregisterMember(targetId);
                     lang().send(player, "team.kicked", "{player}", targetName);
                     Player kickedPlayer = Bukkit.getPlayer(targetId);
                     if (kickedPlayer != null) lang().send(kickedPlayer, "team.kicked-target");
@@ -200,6 +215,20 @@ public final class MemberManageMenu extends Menu {
             case COOP: return ChatColor.GRAY.toString();
             default: return ChatColor.DARK_GRAY.toString();
         }
+    }
+
+    private boolean canChangeRole(IslandRole currentRole, IslandRole newRole) {
+        if (targetId.equals(island.getOwner())) return false;
+
+        IslandRole myRole = island.getMemberRole(player.getUniqueId());
+        if (currentRole.isAtLeast(myRole) || newRole.isAtLeast(myRole)) {
+            return false;
+        }
+
+        IslandPermission permission = newRole.isAtLeast(currentRole)
+                ? IslandPermission.PROMOTE
+                : IslandPermission.DEMOTE;
+        return plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), permission);
     }
 
     private ItemStack makeItem(Material material, String name) {

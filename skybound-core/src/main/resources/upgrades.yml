@@ -1,4 +1,29 @@
 # SkyBound - Конфигурация улучшений
+#
+# Улучшения покупаются из банка острова через GUI улучшений.
+# У каждого улучшения есть уровни, цена и value — значение эффекта.
+#
+# Общая структура:
+# upgrades:
+#   upgrade_id:
+#     display-name: "..."
+#     icon: MATERIAL
+#     type: UPGRADE_TYPE
+#     levels:
+#       1: { cost: цена, value: эффект }
+#
+# Поля:
+#   display-name — название в меню, поддерживает & цвета.
+#   icon         — Bukkit Material иконки.
+#   type         — тип улучшения. Код использует его для некоторых эффектов.
+#   levels       — уровни улучшения. Покупаются строго по порядку.
+#   cost         — цена уровня, списывается из банка острова.
+#   value        — эффект уровня:
+#                  ISLAND_SIZE    -> бонус к радиусу острова;
+#                  TEAM_SIZE      -> бонус к лимиту участников;
+#                  BANK_CAPACITY  -> бонус к лимиту банка;
+#                  ENTITY_LIMIT   -> бонус к лимиту существ;
+#                  остальные типы доступны для аддонов/будущих механик.
 
 upgrades:
   island_size:
@@ -6,72 +31,84 @@ upgrades:
     icon: GRASS_BLOCK
     type: ISLAND_SIZE
     levels:
-      1: { cost: 10000, value: 10 }
-      2: { cost: 25000, value: 20 }
-      3: { cost: 50000, value: 30 }
-      4: { cost: 100000, value: 40 }
-      5: { cost: 200000, value: 50 }
+      1: { cost: 15000, value: 10 }
+      2: { cost: 45000, value: 20 }
+      3: { cost: 110000, value: 35 }
+      4: { cost: 240000, value: 50 }
+      5: { cost: 500000, value: 75 }
 
   team_size:
     display-name: "&bРазмер команды"
     icon: PLAYER_HEAD
     type: TEAM_SIZE
     levels:
-      1: { cost: 5000, value: 1 }
-      2: { cost: 15000, value: 2 }
-      3: { cost: 35000, value: 3 }
-      4: { cost: 75000, value: 4 }
+      1: { cost: 20000, value: 1 }
+      2: { cost: 60000, value: 3 }
+      3: { cost: 150000, value: 5 }
+      4: { cost: 350000, value: 7 }
+
+  bank_capacity:
+    display-name: "&6Вместимость банка"
+    icon: GOLD_BLOCK
+    type: BANK_CAPACITY
+    levels:
+      1: { cost: 25000, value: 500000 }
+      2: { cost: 80000, value: 1500000 }
+      3: { cost: 220000, value: 4000000 }
+      4: { cost: 550000, value: 9000000 }
+      5: { cost: 1200000, value: 25000000 }
 
   generator_tier:
     display-name: "&eУровень генератора"
     icon: DIAMOND_ORE
     type: GENERATOR_TIER
     levels:
-      1: { cost: 20000, value: 1 }
-      2: { cost: 50000, value: 2 }
-      3: { cost: 150000, value: 3 }
+      1: { cost: 30000, value: 1 }
+      2: { cost: 100000, value: 2 }
+      3: { cost: 300000, value: 3 }
 
   hopper_limit:
     display-name: "&7Лимит воронок"
     icon: HOPPER
     type: HOPPER_LIMIT
     levels:
-      1: { cost: 8000, value: 32 }
-      2: { cost: 20000, value: 64 }
-      3: { cost: 50000, value: 128 }
+      1: { cost: 15000, value: 32 }
+      2: { cost: 45000, value: 96 }
+      3: { cost: 120000, value: 192 }
 
   crop_growth:
     display-name: "&aСкорость роста"
     icon: WHEAT
     type: CROP_GROWTH
     levels:
-      1: { cost: 12000, value: 1.5 }
-      2: { cost: 30000, value: 2.0 }
-      3: { cost: 70000, value: 3.0 }
+      1: { cost: 18000, value: 1.25 }
+      2: { cost: 60000, value: 1.75 }
+      3: { cost: 160000, value: 2.5 }
 
   spawner_rate:
     display-name: "&cСкорость спавнеров"
     icon: SPAWNER
     type: SPAWNER_RATE
     levels:
-      1: { cost: 25000, value: 1.5 }
-      2: { cost: 60000, value: 2.0 }
-      3: { cost: 150000, value: 3.0 }
+      1: { cost: 50000, value: 1.25 }
+      2: { cost: 150000, value: 1.75 }
+      3: { cost: 400000, value: 2.5 }
 
   entity_limit:
     display-name: "&dЛимит существ"
     icon: PIG_SPAWN_EGG
     type: ENTITY_LIMIT
     levels:
-      1: { cost: 10000, value: 50 }
-      2: { cost: 25000, value: 100 }
-      3: { cost: 60000, value: 200 }
+      1: { cost: 20000, value: 75 }
+      2: { cost: 70000, value: 175 }
+      3: { cost: 180000, value: 300 }
+      4: { cost: 420000, value: 425 }
 
   mob_drop:
     display-name: "&6Множитель дропа"
     icon: ROTTEN_FLESH
     type: MOB_DROP
     levels:
-      1: { cost: 15000, value: 1.5 }
-      2: { cost: 40000, value: 2.0 }
-      3: { cost: 100000, value: 3.0 }
+      1: { cost: 30000, value: 1.25 }
+      2: { cost: 90000, value: 1.75 }
+      3: { cost: 250000, value: 2.5 }

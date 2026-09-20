@@ -1,13 +1,29 @@
 # SkyBound Core Configuration
 # Version: 2.0.0
+#
+# Главный конфиг ядра SkyBound.
+# Здесь задаются базовые параметры мира островов, экономики, хранения,
+# производительности и систем, которые не имеют собственного отдельного файла.
+#
+# Цветовые коды в этом файле обычно не используются, кроме названий валюты.
+# После изменения большинства параметров лучше перезапустить сервер.
 
+# Язык сообщений. Файл берётся из /lang/lang_<language>.yml.
+# Например: ru -> lang_ru.yml, en -> lang_en.yml.
 language: ru
+
+# Интервал автосохранения всех данных плагина.
+# Чем меньше значение, тем меньше риск потери данных при краше,
+# но тем чаще будут операции записи на диск/БД.
 autosave-seconds: 120
 
 # Storage backend: yaml or mysql
 storage:
+  # yaml — хранение в data/*.yml. Хорошо для небольших/средних серверов.
+  # mysql — зарезервировано под SQL-хранилище/крупные серверы.
   mode: yaml
   mysql:
+    # Настройки подключения к MySQL, используются только если mode: mysql.
     host: "127.0.0.1"
     port: 3306
     database: "skybound"
@@ -17,33 +33,62 @@ storage:
 
 # Island world settings
 island-world:
+  # Имя мира, где размещаются острова.
   name: skybound_islands
+  # Расстояние между центрами островов. Должно быть больше default-radius * 2.
   spacing: 256
+  # Базовый радиус острова до улучшений.
   default-radius: 60
+  # Высота, на которой создаётся стартовая точка острова.
   base-y: 100
   # Dimensional islands (like IridiumSkyblock)
   nether:
+    # Включает/выключает nether-измерение острова.
     enabled: true
+    # Минимальный уровень острова для доступа к nether.
     unlock-level: 10
   end:
+    # Включает/выключает end-измерение острова.
     enabled: true
+    # Минимальный уровень острова для доступа к end.
     unlock-level: 25
 
 # Island defaults
 island:
-  max-team-size: 4
-  max-warps: 3
+  # Базовый лимит постоянных участников команды без улучшений team_size.
+  max-team-size: 3
+  # Базовый лимит варпов острова.
+  max-warps: 5
+  # Base island bank capacity before bank_capacity upgrades.
+  base-bank-limit: 1000000
+  # Base living entity limit before entity_limit upgrades.
+  base-entity-limit: 75
+  # true — новые острова закрыты для посещений по умолчанию.
   lock-default: false
-  xp-per-level: 100
+  # Сколько XP нужно на 1 уровень острова.
+  xp-per-level: 250
+
+# Performance tuning for heavy island operations.
+performance:
+  # Number of blocks removed per tick during island delete/regeneration cleanup.
+  regen-blocks-per-tick: 12000
+  # Number of blocks scanned per tick during island value recalculation.
+  value-blocks-per-tick: 8000
+  # Number of X/Z columns updated per tick when changing an island biome.
+  biome-columns-per-tick: 1024
 
 
 
 # Ore generator
 generator:
+  # Включает замену cobblestone/basalt генерации на материалы из generators.yml.
   enabled: true
 
 # Block values for island worth calculation
 block-values:
+  # Стоимость блоков для /is value и топа островов.
+  # Формат: MATERIAL: value
+  # Блоки без записи дают 0 стоимости.
   DIAMOND_BLOCK: 100
   EMERALD_BLOCK: 150
   GOLD_BLOCK: 50
@@ -69,7 +114,22 @@ island-core:
 
 # Economy
 economy:
+  # Release balance profile. This key is informational for server owners/addons.
+  # normal = stable progression; keep shop sell prices around 35-45% of buy prices.
+  profile: normal
+  shop:
+    # Multiplies every buy-price from shop.yml at load time.
+    buy-multiplier: 1.15
+    # Multiplies every sell-price from shop.yml at load time.
+    sell-multiplier: 0.85
+  missions:
+    # Multiplies every rewards.money value from missions.yml at load time.
+    money-multiplier: 1.0
+    # Multiplies every rewards.island-xp value from missions.yml at load time.
+    island-xp-multiplier: 0.85
+  # Название валюты в сообщениях/меню.
   currency-name: "coin"
+  # Название валюты во множественном числе.
   currency-name-plural: "coins"
 
 # Prestige system
@@ -79,7 +139,7 @@ prestige:
   min-level: 30
   # XP cost for ONE prestige. Set higher to make prestige "expensive".
   # If 0 — falls back to (min-level × island.xp-per-level).
-  cost-xp: 50000
+  cost-xp: 75000
   # How many prestige tokens are granted per single prestige.
   tokens-per-prestige: 1
   # Show the prestige button inside the Upgrades menu ("Ядро улучшений").

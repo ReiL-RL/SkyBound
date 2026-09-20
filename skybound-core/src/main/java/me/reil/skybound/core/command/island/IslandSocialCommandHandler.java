@@ -42,13 +42,14 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
         }
     }
 
-    private Player findPlayer(Player player, String[] args, int index) {
+    private OfflinePlayer findKnownOfflinePlayer(Player player, String[] args, int index) {
         if (args.length <= index) {
             context.lang().send(player, "usage",
                     "{usage}", "/is " + args[0] + " " + context.lang().get("arg.player"));
             return null;
         }
-        Player target = Bukkit.getPlayer(args[index]);
+
+        OfflinePlayer target = findKnownOfflinePlayer(args[index]);
         if (target == null) {
             context.lang().send(player, "player-not-found");
         }
@@ -56,7 +57,7 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
     }
 
     private void visit(Player player, String[] args) {
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
@@ -70,9 +71,13 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
             context.lang().send(player, "island.visit-locked");
             return;
         }
+        if (plugin.getTeamManager().isBanned(island, player.getUniqueId())) {
+            context.lang().send(player, "team.banned-from-island");
+            return;
+        }
 
         player.teleport(island.getHome());
-        context.lang().send(player, "island.visited", "{player}", target.getName());
+        context.lang().send(player, "island.visited", "{player}", getDisplayName(target, args[1]));
     }
 
     private void like(Player player) {
@@ -83,6 +88,10 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
         }
         if (island.getMembers().contains(player.getUniqueId())) {
             context.lang().send(player, "like.own-island");
+            return;
+        }
+        if (plugin.getTeamManager().isBanned(island, player.getUniqueId())) {
+            context.lang().send(player, "team.banned-from-island");
             return;
         }
 
@@ -143,6 +152,10 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
             context.lang().send(player, "review.own-island");
             return;
         }
+        if (plugin.getTeamManager().isBanned(target, player.getUniqueId())) {
+            context.lang().send(player, "team.banned-from-island");
+            return;
+        }
 
         int stars;
         try {
@@ -162,6 +175,10 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
                 comment.append(' ');
             }
             comment.append(args[i]);
+        }
+        if (comment.length() > 160) {
+            context.lang().send(player, "review.too-long");
+            return;
         }
 
         plugin.getIslandReviewManager().submitReview(target.getId(), player.getUniqueId(),
@@ -188,6 +205,13 @@ public final class IslandSocialCommandHandler implements IslandSubCommandHandler
         Player owner = Bukkit.getPlayerExact(ownerOrId);
         if (owner != null) {
             Island island = plugin.getIslandManager().getPlayerIsland(owner.getUniqueId());
+            if (island != null) {
+                return island;
+            }
+        }
+        OfflinePlayer offlineOwner = findKnownOfflinePlayer(ownerOrId);
+        if (offlineOwner != null) {
+            Island island = plugin.getIslandManager().getPlayerIsland(offlineOwner.getUniqueId());
             if (island != null) {
                 return island;
             }

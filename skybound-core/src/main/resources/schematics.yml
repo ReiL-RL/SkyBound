@@ -1,5 +1,23 @@
 # Доступные схематики островов
 # Отображаются в GUI при создании острова (/is create)
+#
+# Каждый раздел внутри schematics — это отдельный тип стартового острова.
+#
+# Поля:
+#   display-name — название кнопки в GUI. Поддерживает цветовые коды &.
+#   icon         — Bukkit Material для иконки в GUI.
+#   description  — lore/описание кнопки в GUI.
+#   file         — имя файла в папке schematics/.
+#
+# Безопасность:
+#   file не должен содержать путь вида ../ или абсолютный путь.
+#   Плагин дополнительно нормализует имя файла и не даёт выйти из папки schematics.
+#
+# Как добавить новый остров:
+#   1) положи файл .schem/.schematic в src/main/resources/schematics
+#      или в plugins/SkyBound/schematics на сервере;
+#   2) добавь новый ключ ниже;
+#   3) укажи display-name/icon/description/file.
 
 schematics:
   desert:

@@ -3,6 +3,7 @@ package me.reil.skybound.core.command.island;
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.core.SkyBoundPlugin;
+import me.reil.skybound.core.island.IslandImpl;
 import me.reil.skybound.core.island.IslandLogEntry;
 import me.reil.skybound.core.menu.BiomeSelectMenu;
 import org.bukkit.block.Biome;
@@ -37,7 +38,7 @@ public final class IslandGeneralCommandHandler implements IslandSubCommandHandle
                 name(player, args);
                 return true;
             case "value":
-                value(player);
+                value(player, args);
                 return true;
             case "level":
                 level(player);
@@ -81,6 +82,7 @@ public final class IslandGeneralCommandHandler implements IslandSubCommandHandle
             return;
         }
         island.setHome(player.getLocation());
+        plugin.getIslandManager().saveData();
         context.lang().send(player, "island.home-set");
     }
 
@@ -93,6 +95,7 @@ public final class IslandGeneralCommandHandler implements IslandSubCommandHandle
             return;
         }
         island.setLocked(!island.isLocked());
+        plugin.getIslandManager().saveData();
         context.lang().send(player, island.isLocked() ? "island.locked" : "island.unlocked");
     }
 
@@ -119,16 +122,35 @@ public final class IslandGeneralCommandHandler implements IslandSubCommandHandle
         }
 
         String oldName = island.getName();
-        String newName = name.toString();
+        String newName = name.toString().trim();
+        if (!isValidIslandName(newName)) {
+            context.lang().send(player, "island.invalid-name");
+            return;
+        }
         island.setName(newName);
+        plugin.getIslandManager().saveData();
         context.lang().send(player, "island.renamed", "{name}", newName);
         plugin.getIslandLogManager().log(island.getId(), player.getUniqueId(), player.getName(),
                 IslandLogEntry.LogAction.ISLAND_RENAME, oldName + " → " + newName);
     }
 
-    private void value(Player player) {
+    private void value(final Player player, String[] args) {
         Island island = context.requireIsland(player);
         if (island == null) {
+            return;
+        }
+        if (args.length > 1 && "recalc".equalsIgnoreCase(args[1])) {
+            if (!(island instanceof IslandImpl)) {
+                context.lang().send(player, "value.recalc-failed");
+                return;
+            }
+            context.lang().send(player, "value.recalc-started");
+            plugin.getIslandManager().recalculateValueBatched((IslandImpl) island, new Runnable() {
+                @Override
+                public void run() {
+                    context.lang().send(player, "value.recalc-done");
+                }
+            });
             return;
         }
         context.lang().send(player, "island.value", "{value}", String.format("%.0f", island.getValue()));
@@ -174,8 +196,14 @@ public final class IslandGeneralCommandHandler implements IslandSubCommandHandle
         }
 
         context.lang().send(player, "biome.changing");
-        plugin.getBiomeService().changeBiome(island, biome);
-        context.lang().send(player, "biome.changed", "{biome}", biome.name());
+        if (!plugin.getBiomeService().changeBiomeBatched(island, biome, new Runnable() {
+            @Override
+            public void run() {
+                context.lang().send(player, "biome.changed", "{biome}", biome.name());
+            }
+        })) {
+            context.lang().send(player, "biome.invalid", "{biome}", args[1]);
+        }
     }
 
     private void logs(Player player) {
@@ -211,5 +239,12 @@ public final class IslandGeneralCommandHandler implements IslandSubCommandHandle
             return;
         }
         plugin.getIslandValueMenu().open(player);
+    }
+
+    private boolean isValidIslandName(String name) {
+        return name != null
+                && name.length() >= 3
+                && name.length() <= 32
+                && name.matches("[\\p{L}\\p{N}_\\- ]+");
     }
 }

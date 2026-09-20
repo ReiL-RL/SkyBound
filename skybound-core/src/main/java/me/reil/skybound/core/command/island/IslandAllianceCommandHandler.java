@@ -76,7 +76,13 @@ public final class IslandAllianceCommandHandler implements IslandSubCommandHandl
             name.append(args[i]);
         }
 
-        IslandAllianceManager.Alliance alliance = allianceManager.create(player, name.toString());
+        String allianceName = name.toString().trim();
+        if (!isValidAllianceName(allianceName)) {
+            context.lang().send(player, "alliance.invalid-name");
+            return;
+        }
+
+        IslandAllianceManager.Alliance alliance = allianceManager.create(player, allianceName);
         if (alliance == null) {
             context.lang().send(player, "alliance.create-failed");
         } else {
@@ -198,5 +204,12 @@ public final class IslandAllianceCommandHandler implements IslandSubCommandHandl
                     "{count}", String.valueOf(alliance.islands.size()),
                     "{id}", alliance.id);
         }
+    }
+
+    private boolean isValidAllianceName(String name) {
+        return name != null
+                && name.length() >= 3
+                && name.length() <= 32
+                && name.matches("[A-Za-zА-Яа-я0-9_\\- ]+");
     }
 }

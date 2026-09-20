@@ -4,8 +4,13 @@ import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.api.island.IslandRole;
 import me.reil.skybound.core.SkyBoundPlugin;
+import me.reil.skybound.core.island.IslandLogEntry;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.conversations.ConversationContext;
+import org.bukkit.conversations.ConversationFactory;
+import org.bukkit.conversations.Prompt;
+import org.bukkit.conversations.StringPrompt;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -217,6 +222,7 @@ public final class IslandSettingsMenu extends Menu {
             case 10: // Lock toggle
                 if (!has(IslandPermission.LOCK_ISLAND)) { denied(); return; }
                 island.setLocked(!island.isLocked());
+                plugin.getIslandManager().saveData();
                 plugin.getIslandLogManager().log(island.getId(), player.getUniqueId(), player.getName(),
                         me.reil.skybound.core.island.IslandLogEntry.LogAction.ISLAND_LOCK, island.isLocked() ? "locked" : "unlocked");
                 new IslandSettingsMenu(player, plugin, island).open();
@@ -225,13 +231,13 @@ public final class IslandSettingsMenu extends Menu {
             case 12: // Rename
                 if (!has(IslandPermission.CHANGE_NAME)) { denied(); return; }
                 player.closeInventory();
-                lang().send(player, "menu.settings.rename-lore", "{name}", island.getName());
+                startRenameConversation();
                 break;
 
             case 13: // Description
                 if (!has(IslandPermission.CHANGE_DESCRIPTION)) { denied(); return; }
                 player.closeInventory();
-                lang().send(player, "menu.settings.description-lore", "{desc}", island.getDescription());
+                startDescriptionConversation();
                 break;
 
             case 14: // Biome
@@ -297,6 +303,98 @@ public final class IslandSettingsMenu extends Menu {
     /** Notify the player they lack permission and refresh the menu. */
     private void denied() {
         lang().send(player, "menu.settings.denied");
+    }
+
+    private void startRenameConversation() {
+        createTextConversation(new TextInputHandler() {
+            @Override
+            public String prompt() {
+                return lang().get("menu.settings.rename-prompt", "{name}", island.getName());
+            }
+
+            @Override
+            public boolean accept(String input) {
+                String newName = input == null ? "" : input.trim();
+                if (!isValidIslandName(newName)) {
+                    lang().send(player, "island.invalid-name");
+                    return false;
+                }
+                String oldName = island.getName();
+                island.setName(newName);
+                plugin.getIslandManager().saveData();
+                plugin.getIslandLogManager().log(island.getId(), player.getUniqueId(), player.getName(),
+                        IslandLogEntry.LogAction.ISLAND_RENAME, oldName + " → " + newName);
+                lang().send(player, "island.renamed", "{name}", newName);
+                return true;
+            }
+        });
+    }
+
+    private void startDescriptionConversation() {
+        createTextConversation(new TextInputHandler() {
+            @Override
+            public String prompt() {
+                return lang().get("menu.settings.description-prompt", "{desc}", island.getDescription().isEmpty() ? "-" : island.getDescription());
+            }
+
+            @Override
+            public boolean accept(String input) {
+                String description = input == null ? "" : input.trim();
+                if ("-".equals(description)) {
+                    description = "";
+                }
+                if (description.length() > 160) {
+                    lang().send(player, "menu.settings.description-too-long");
+                    return false;
+                }
+                island.setDescription(description);
+                plugin.getIslandManager().saveData();
+                plugin.getIslandLogManager().log(island.getId(), player.getUniqueId(), player.getName(),
+                        IslandLogEntry.LogAction.SETTINGS_CHANGE, "description");
+                lang().send(player, "menu.settings.description-updated");
+                return true;
+            }
+        });
+    }
+
+    private void createTextConversation(final TextInputHandler handler) {
+        new ConversationFactory(plugin)
+                .withModality(false)
+                .withLocalEcho(false)
+                .withTimeout(30)
+                .withFirstPrompt(new StringPrompt() {
+                    @Override
+                    public String getPromptText(ConversationContext context) {
+                        return handler.prompt();
+                    }
+
+                    @Override
+                    public Prompt acceptInput(ConversationContext context, String input) {
+                        if (input == null || "cancel".equalsIgnoreCase(input.trim()) || "отмена".equalsIgnoreCase(input.trim())) {
+                            lang().send(player, "menu.settings.input-cancelled");
+                            return Prompt.END_OF_CONVERSATION;
+                        }
+                        if (handler.accept(input)) {
+                            new IslandSettingsMenu(player, plugin, island).open();
+                            return Prompt.END_OF_CONVERSATION;
+                        }
+                        return this;
+                    }
+                })
+                .buildConversation(player)
+                .begin();
+    }
+
+    private boolean isValidIslandName(String name) {
+        return name != null
+                && name.length() >= 3
+                && name.length() <= 32
+                && name.matches("[\\p{L}\\p{N}_\\- ]+");
+    }
+
+    private interface TextInputHandler {
+        String prompt();
+        boolean accept(String input);
     }
 
     private String formatAction(me.reil.skybound.core.island.IslandLogEntry.LogAction action) {

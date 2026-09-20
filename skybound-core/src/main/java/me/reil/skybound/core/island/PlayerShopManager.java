@@ -8,7 +8,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,10 +49,12 @@ public final class PlayerShopManager {
     }
 
     public Shop getShopAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) return null;
         return shops.get(locKey(loc));
     }
 
     public Shop createShop(Location loc, String islandId, UUID owner, double price) {
+        if (loc == null || loc.getWorld() == null || islandId == null || owner == null || !isValidPrice(price)) return null;
         String key = locKey(loc);
         if (shops.containsKey(key)) return null;
         String shopId = UUID.randomUUID().toString().substring(0, 8);
@@ -64,8 +65,18 @@ public final class PlayerShopManager {
     }
 
     public boolean removeShop(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
         boolean removed = shops.remove(locKey(loc)) != null;
         if (removed) save();
+        return removed;
+    }
+
+    public int removeIslandShops(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return 0;
+        int before = shops.size();
+        shops.values().removeIf(shop -> islandId.equals(shop.islandId));
+        int removed = before - shops.size();
+        if (removed > 0) save();
         return removed;
     }
 
@@ -101,6 +112,7 @@ public final class PlayerShopManager {
             try { owner = UUID.fromString(sec.getString(id + ".owner")); }
             catch (Exception e) { continue; }
             double price = sec.getDouble(id + ".price", 1.0);
+            if (!isValidPrice(price)) continue;
             Location loc = new Location(w, x, y, z);
             Shop shop = new Shop(id, islandId, owner, loc, price);
             shops.put(locKey(loc), shop);
@@ -111,6 +123,7 @@ public final class PlayerShopManager {
         YamlConfiguration cfg = new YamlConfiguration();
         for (Shop s : shops.values()) {
             String base = "shops." + s.shopId + ".";
+            if (s.location == null || s.location.getWorld() == null || !isValidPrice(s.price)) continue;
             cfg.set(base + "world", s.location.getWorld().getName());
             cfg.set(base + "x", s.location.getBlockX());
             cfg.set(base + "y", s.location.getBlockY());
@@ -119,12 +132,10 @@ public final class PlayerShopManager {
             cfg.set(base + "owner", s.owner.toString());
             cfg.set(base + "price", s.price);
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save player-shops.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "player-shops.yml");
+    }
+
+    private static boolean isValidPrice(double price) {
+        return price > 0.0 && !Double.isNaN(price) && !Double.isInfinite(price);
     }
 }

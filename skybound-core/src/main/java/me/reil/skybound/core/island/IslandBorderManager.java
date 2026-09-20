@@ -6,7 +6,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -117,6 +116,13 @@ public final class IslandBorderManager {
         return newState;
     }
 
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        boolean changed = colors.remove(islandId) != null;
+        changed = visibility.remove(islandId) != null || changed;
+        if (changed) save();
+    }
+
     // --- Persistence ---
 
     public void load() {
@@ -146,12 +152,6 @@ public final class IslandBorderManager {
         for (Map.Entry<String, Boolean> e : visibility.entrySet()) {
             cfg.set("borders." + e.getKey() + ".visible", e.getValue());
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save island-borders.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "island-borders.yml");
     }
 }

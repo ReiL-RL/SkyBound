@@ -5,14 +5,12 @@ import me.reil.skybound.api.visit.VisitProvider;
 import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -41,6 +39,10 @@ public final class VisitManager implements VisitProvider {
     public void visit(Player player, Island island) {
         if (island.isLocked()) {
             sendLang(player, "visit.locked");
+            return;
+        }
+        if (isBanned(player, island)) {
+            sendLang(player, "team.banned-from-island");
             return;
         }
         player.teleport(island.getHome());
@@ -121,7 +123,7 @@ public final class VisitManager implements VisitProvider {
         File file = new File(plugin.getDataFolder(), "visits.yml");
         if (!file.exists()) return;
 
-        FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
         this.lastResetDay = cfg.getInt("last-reset-day", -1);
 
         ConfigurationSection likesSection = cfg.getConfigurationSection("likes");
@@ -144,7 +146,7 @@ public final class VisitManager implements VisitProvider {
 
     private void saveData() {
         File file = new File(plugin.getDataFolder(), "visits.yml");
-        FileConfiguration cfg = new YamlConfiguration();
+        YamlConfiguration cfg = new YamlConfiguration();
 
         cfg.set("last-reset-day", lastResetDay);
 
@@ -156,16 +158,18 @@ public final class VisitManager implements VisitProvider {
             cfg.set("daily-likes." + entry.getKey(), new java.util.ArrayList<String>(entry.getValue()));
         }
 
-        try {
-            cfg.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save visits data: " + e.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, file, "visits.yml");
     }
 
     private void sendLang(Player player, String key, String... replacements) {
         if (plugin instanceof SkyBoundPlugin) {
             ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
         }
+    }
+
+    private boolean isBanned(Player player, Island island) {
+        return plugin instanceof SkyBoundPlugin
+                && ((SkyBoundPlugin) plugin).getTeamManager() != null
+                && ((SkyBoundPlugin) plugin).getTeamManager().isBanned(island, player.getUniqueId());
     }
 }

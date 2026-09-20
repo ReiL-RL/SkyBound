@@ -93,12 +93,16 @@ public final class IslandCreateMenu extends Menu {
                     // Remember schematic name for regen
                     ((me.reil.skybound.core.island.IslandImpl) island).setSchematicName(opt.schematicFile);
 
-                    // Spawn = center of island (schematic origin = player pos when //copy)
                     org.bukkit.Location home = island.getCenter().clone();
                     home.setX(home.getBlockX() + 0.5);
-                    home.setY(home.getBlockY() + 1);
                     home.setZ(home.getBlockZ() + 0.5);
+                    if (home.getWorld() != null) {
+                        home.setY(home.getWorld().getHighestBlockYAt(home.getBlockX(), home.getBlockZ()) + 1);
+                    } else {
+                        home.setY(home.getBlockY() + 1);
+                    }
                     island.setHome(home);
+                    plugin.getIslandManager().saveData();
 
                     player.teleport(island.getHome());
                     lang().send(player, "island.created");
@@ -136,10 +140,28 @@ public final class IslandCreateMenu extends Menu {
             Material icon = Material.matchMaterial(ss.getString("icon", "GRASS_BLOCK"));
             if (icon == null) icon = Material.GRASS_BLOCK;
             List<String> desc = ss.getStringList("description");
-            String schematicFile = ss.getString("file", key + ".schem");
+            String schematicFile = normalizeSchematicName(ss.getString("file", key + ".schem"));
+            if (!isSafeSchematicPath(schematicFile)) {
+                plugin.getLogger().warning("Skipping schematic '" + key + "': unsafe file path " + schematicFile);
+                continue;
+            }
 
             options.add(new SchematicOption(key, displayName, icon, desc.toArray(new String[0]), schematicFile));
         }
+    }
+
+    private String normalizeSchematicName(String schematicFile) {
+        String name = schematicFile == null || schematicFile.trim().isEmpty() ? "default.schem" : schematicFile.trim();
+        if (!name.endsWith(".schem") && !name.endsWith(".schematic")) {
+            name = name + ".schem";
+        }
+        return name;
+    }
+
+    private boolean isSafeSchematicPath(String schematicFile) {
+        return schematicFile.indexOf("..") < 0
+                && schematicFile.indexOf('/') < 0
+                && schematicFile.indexOf('\\') < 0;
     }
 
     private ItemStack createItem(Material material, String name) {

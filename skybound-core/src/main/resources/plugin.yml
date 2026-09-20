@@ -1,10 +1,43 @@
+# ================================================================
+# SkyBound plugin descriptor
+# ================================================================
+# Этот файл читает Bukkit/Paper при запуске сервера.
+# Здесь объявляются:
+#   - главный Java-класс плагина;
+#   - поддерживаемая версия API;
+#   - зависимости/softdepend;
+#   - команды, которые Bukkit должен зарегистрировать;
+#   - глобальные permissions.
+#
+# Важно:
+#   * main должен указывать на класс, который extends JavaPlugin.
+#   * api-version влияет на режим совместимости Bukkit API.
+#   * softdepend не является обязательной зависимостью: если плагина нет,
+#     SkyBound запустится и отключит связанную интеграцию.
+#   * commands — только регистрация команд. Логика subcommands находится в коде.
+#   * permissions здесь глобальные Bukkit-права. Права внутри острова
+#     настраиваются отдельно через IslandPermissionManager/GUI ролей.
+
 name: SkyBound
 version: ${project.version}
 main: me.reil.skybound.core.SkyBoundPlugin
 api-version: 1.16
 author: Reil
 description: Modular SkyBlock core with addon architecture
-softdepend: [Vault, PlaceholderAPI, WorldEdit, FastAsyncWorldEdit, SopLib, VoidRift]
+
+# Мягкие зависимости:
+# Vault — экономика.
+# PlaceholderAPI — плейсхолдеры.
+# WorldEdit/FastAsyncWorldEdit — вставка schematic.
+# SopLib — опциональная совместимость/утилиты через reflection.
+# VoidRift — внешний addon/hook.
+# FlexAchievements — внешний hook достижений.
+# SkyBound-IslandCore — addon ядер острова.
+softdepend: [Vault, PlaceholderAPI, WorldEdit, FastAsyncWorldEdit, SopLib, VoidRift, FlexAchievements, SkyBound-IslandCore]
+
+# Команды:
+# /is — основная команда игроков. Внутри есть create/home/team/shop/missions/etc.
+# /sbadmin — административные команды, например управление токенами престижа.
 commands:
   is:
     description: Main island command
@@ -14,6 +47,12 @@ commands:
     description: SkyBound admin command
     usage: /sbadmin [subcommand]
     aliases: [skyadmin]
+
+# Глобальные permissions Bukkit.
+# default:
+#   true  — доступно всем игрокам;
+#   op    — только операторам сервера;
+#   false — нужно выдавать через permissions-плагин.
 permissions:
   skybound.admin:
     description: Full admin access

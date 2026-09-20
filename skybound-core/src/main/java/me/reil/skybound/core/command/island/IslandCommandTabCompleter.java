@@ -14,7 +14,7 @@ import java.util.List;
 public final class IslandCommandTabCompleter implements TabCompleter {
 
     private static final List<String> SUBCOMMANDS = Arrays.asList(
-            "create", "home", "sethome", "invite", "accept", "deny", "kick", "leave",
+            "create", "home", "sethome", "invite", "accept", "deny", "kick", "ban", "unban", "leave",
             "promote", "demote", "transfer", "trust", "untrust", "coop", "lock", "name",
             "visit", "like", "trade", "warp", "setwarp", "delwarp", "warps", "top",
             "bank", "shop", "missions", "upgrades", "boosters", "members", "settings",
@@ -24,7 +24,7 @@ public final class IslandCommandTabCompleter implements TabCompleter {
             "prestigeshop", "pshop", "shopchest", "deposit");
 
     private static final List<String> PLAYER_TARGET_SUBCOMMANDS = Arrays.asList(
-            "invite", "kick", "promote", "demote", "transfer", "trust", "untrust",
+            "invite", "kick", "ban", "unban", "promote", "demote", "transfer", "trust", "untrust",
             "coop", "visit", "giveisland", "sell");
 
     private static final List<String> ALLIANCE_SUBCOMMANDS = Arrays.asList(

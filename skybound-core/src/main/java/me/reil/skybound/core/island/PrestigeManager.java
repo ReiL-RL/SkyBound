@@ -3,9 +3,12 @@ package me.reil.skybound.core.island;
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.island.PrestigeProvider;
 import me.reil.skybound.core.config.CoreConfig;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -19,6 +22,7 @@ public final class PrestigeManager implements PrestigeProvider {
     private final JavaPlugin plugin;
     private final CoreConfig config;
     private final IslandManager islandManager;
+    private final File dataFile;
     // islandId -> prestige level
     private final Map<String, Integer> prestigeLevels = new LinkedHashMap<String, Integer>();
 
@@ -26,6 +30,8 @@ public final class PrestigeManager implements PrestigeProvider {
         this.plugin = plugin;
         this.config = config;
         this.islandManager = islandManager;
+        this.dataFile = new File(plugin.getDataFolder(), "data/prestige-levels.yml");
+        load();
     }
 
     /** Minimum island level required to prestige (from config). */
@@ -80,6 +86,7 @@ public final class PrestigeManager implements PrestigeProvider {
         } else {
             prestigeLevels.put(islandId, level);
         }
+        save();
     }
 
     /**
@@ -139,6 +146,8 @@ public final class PrestigeManager implements PrestigeProvider {
         if (prestigeShopManager != null) {
             prestigeShopManager.addTokens(island.getId(), getTokensPerPrestige() * doCount);
         }
+        islandManager.saveData();
+        save();
 
         plugin.getLogger().info("Island " + island.getId() + " prestiged +" + doCount
                 + " → level " + newPrestige + " (cost=" + totalCost + " XP, remaining=" + remaining + ")");
@@ -165,5 +174,37 @@ public final class PrestigeManager implements PrestigeProvider {
     public void setAllPrestigeLevels(Map<String, Integer> data) {
         prestigeLevels.clear();
         prestigeLevels.putAll(data);
+        save();
+    }
+
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        if (prestigeLevels.remove(islandId) != null) {
+            save();
+        }
+    }
+
+    private void load() {
+        prestigeLevels.clear();
+        if (!dataFile.exists()) return;
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(dataFile);
+        ConfigurationSection sec = cfg.getConfigurationSection("prestige");
+        if (sec == null) return;
+        for (String islandId : sec.getKeys(false)) {
+            int level = sec.getInt(islandId, 0);
+            if (level > 0) {
+                prestigeLevels.put(islandId, level);
+            }
+        }
+    }
+
+    private void save() {
+        YamlConfiguration cfg = new YamlConfiguration();
+        for (Map.Entry<String, Integer> entry : prestigeLevels.entrySet()) {
+            if (entry.getValue() != null && entry.getValue() > 0) {
+                cfg.set("prestige." + entry.getKey(), entry.getValue());
+            }
+        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "prestige-levels.yml");
     }
 }

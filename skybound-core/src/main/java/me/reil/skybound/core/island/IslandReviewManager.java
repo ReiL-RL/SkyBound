@@ -5,7 +5,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -96,6 +95,13 @@ public final class IslandReviewManager {
         save();
     }
 
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        if (reviews.remove(islandId) != null) {
+            save();
+        }
+    }
+
     // --- Persistence ---
 
     public void load() {
@@ -115,10 +121,14 @@ public final class IslandReviewManager {
                     UUID author = UUID.fromString(String.valueOf(m.get("author")));
                     String name = String.valueOf(m.get("name"));
                     int stars = Integer.parseInt(String.valueOf(m.get("stars")));
+                    if (stars < 1) stars = 1;
+                    if (stars > 5) stars = 5;
                     String comment = m.containsKey("comment") ? String.valueOf(m.get("comment")) : "";
                     long ts = Long.parseLong(String.valueOf(m.get("timestamp")));
                     list.add(new Review(author, name, stars, comment, ts));
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Ignoring invalid review for island '" + islandId + "': " + e.getMessage());
+                }
             }
             if (!list.isEmpty()) reviews.put(islandId, list);
         }
@@ -139,12 +149,6 @@ public final class IslandReviewManager {
             }
             cfg.set("reviews." + e.getKey(), list);
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save island-reviews.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "island-reviews.yml");
     }
 }

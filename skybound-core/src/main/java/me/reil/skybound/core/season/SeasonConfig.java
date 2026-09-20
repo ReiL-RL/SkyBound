@@ -42,7 +42,7 @@ public final class SeasonConfig {
         }
 
         this.enabled = section.getBoolean("enabled", true);
-        this.durationDays = section.getInt("duration-days", 30);
+        this.durationDays = Math.max(1, section.getInt("duration-days", 30));
         this.autoResetIslands = section.getBoolean("auto-reset-islands", false);
         this.announceEnd = section.getBoolean("announce-end", true);
 
@@ -52,8 +52,11 @@ public final class SeasonConfig {
             for (String key : rewardsSection.getKeys(false)) {
                 try {
                     int rank = Integer.parseInt(key);
-                    List<String> commands = rewardsSection.getStringList(key);
-                    rewards.put(rank, commands);
+                    if (rank < 1) continue;
+                    List<String> commands = sanitizeCommands(getCommandList(rewardsSection, key));
+                    if (!commands.isEmpty()) {
+                        rewards.put(rank, commands);
+                    }
                 } catch (NumberFormatException ignored) {
                 }
             }
@@ -65,4 +68,36 @@ public final class SeasonConfig {
     public boolean isAutoResetIslands() { return autoResetIslands; }
     public boolean isAnnounceEnd() { return announceEnd; }
     public Map<Integer, List<String>> getRewards() { return Collections.unmodifiableMap(rewards); }
+
+    private List<String> sanitizeCommands(List<String> raw) {
+        List<String> out = new ArrayList<String>();
+        for (String command : raw) {
+            if (command == null) continue;
+            String sanitized = command.trim();
+            if (sanitized.startsWith("/")) {
+                sanitized = sanitized.substring(1).trim();
+            }
+            if (sanitized.length() > 256) {
+                plugin.getLogger().warning("Ignoring overlong season reward command.");
+                continue;
+            }
+            if (!sanitized.isEmpty()) {
+                out.add(sanitized);
+            }
+        }
+        return out;
+    }
+
+    private List<String> getCommandList(ConfigurationSection section, String key) {
+        if (section.isList(key)) {
+            return section.getStringList(key);
+        }
+        String single = section.getString(key);
+        if (single == null) {
+            return Collections.emptyList();
+        }
+        List<String> out = new ArrayList<String>();
+        out.add(single);
+        return out;
+    }
 }

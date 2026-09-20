@@ -100,8 +100,13 @@ public final class BiomeSelectMenu extends Menu {
         player.closeInventory();
         lang().send(player, "biome.changing");
 
-        plugin.getBiomeService().changeBiome(island, biome);
-        lang().send(player, "biome.changed", "{biome}", lang().get(opt.displayKey));
+        final String displayName = lang().get(opt.displayKey);
+        plugin.getBiomeService().changeBiomeBatched(island, biome, new Runnable() {
+            @Override
+            public void run() {
+                lang().send(player, "biome.changed", "{biome}", displayName);
+            }
+        });
     }
 
     private ItemStack makeItem(Material material, String name) {

@@ -1,6 +1,7 @@
 package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.api.island.IslandRole;
 import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
@@ -75,10 +76,12 @@ public final class IslandMembersMenu extends Menu {
                 lore.add(color("&7") + lang().get("menu.members.role") + getRoleColor(role) + role.name());
                 lore.add(color("&7") + "Status: " + (isOnline ? color("&a") + lang().get("menu.members.online") : color("&c") + lang().get("menu.members.offline")));
                 lore.add("");
-                if (!isOwner) {
+                if (!isOwner && canManage(memberId)) {
                     lore.add(lang().get("menu.members.manage"));
-                } else {
+                } else if (isOwner) {
                     lore.add(lang().get("menu.members.owner"));
+                } else {
+                    lore.add(lang().get("menu.settings.no-access"));
                 }
                 meta.setLore(lore);
                 head.setItemMeta(meta);
@@ -108,9 +111,25 @@ public final class IslandMembersMenu extends Menu {
 
         UUID targetId = memberList.get(index);
         if (targetId.equals(island.getOwner())) return; // Can't manage owner
+        if (!canManage(targetId)) {
+            lang().send(player, "no-permission");
+            return;
+        }
 
         // Open member management menu
         new MemberManageMenu(player, plugin, island, targetId).open();
+    }
+
+    private boolean canManage(UUID targetId) {
+        IslandRole myRole = island.getMemberRole(player.getUniqueId());
+        IslandRole targetRole = island.getMemberRole(targetId);
+        if (targetRole.isAtLeast(myRole)) {
+            return false;
+        }
+        return island.getOwner().equals(player.getUniqueId())
+                || plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), IslandPermission.KICK)
+                || plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), IslandPermission.PROMOTE)
+                || plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), IslandPermission.DEMOTE);
     }
 
     private String getRoleColor(IslandRole role) {

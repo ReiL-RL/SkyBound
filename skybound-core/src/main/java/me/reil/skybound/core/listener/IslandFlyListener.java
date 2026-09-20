@@ -1,9 +1,11 @@
 package me.reil.skybound.core.listener;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.core.booster.BoosterManager;
 import me.reil.skybound.core.config.CoreConfig;
 import me.reil.skybound.core.island.IslandManager;
+import me.reil.skybound.core.island.IslandPermissionManager;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,11 +22,14 @@ public final class IslandFlyListener implements Listener {
     private final IslandManager islandManager;
     private final BoosterManager boosterManager;
     private final CoreConfig config;
+    private final IslandPermissionManager permissionManager;
 
-    public IslandFlyListener(IslandManager islandManager, BoosterManager boosterManager, CoreConfig config) {
+    public IslandFlyListener(IslandManager islandManager, BoosterManager boosterManager, CoreConfig config,
+                             IslandPermissionManager permissionManager) {
         this.islandManager = islandManager;
         this.boosterManager = boosterManager;
         this.config = config;
+        this.permissionManager = permissionManager;
     }
 
     @EventHandler
@@ -50,9 +55,9 @@ public final class IslandFlyListener implements Listener {
             return;
         }
 
-        // Check if player is a member and has flight booster
+        // Check if player is a member and has island flight permission + flight access
         if (island.getMembers().contains(player.getUniqueId())) {
-            if (boosterManager.isActive(island, "flight") || player.hasPermission("skybound.fly")) {
+            if (canFlyOnIsland(player, island)) {
                 if (!player.getAllowFlight()) {
                     player.setAllowFlight(true);
                 }
@@ -78,5 +83,11 @@ public final class IslandFlyListener implements Listener {
             player.setAllowFlight(false);
             player.setFlying(false);
         }
+    }
+
+    private boolean canFlyOnIsland(Player player, Island island) {
+        if (player.hasPermission("skybound.fly.everywhere")) return true;
+        if (!permissionManager.hasPermission(island, player.getUniqueId(), IslandPermission.FLY)) return false;
+        return boosterManager.isActive(island, "flight") || player.hasPermission("skybound.fly");
     }
 }

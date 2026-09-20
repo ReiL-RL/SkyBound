@@ -85,7 +85,7 @@ public final class IslandTransferManager {
         if (buyer == null) return "player-not-found";
         if (buyer.getUniqueId().equals(seller.getUniqueId())) return "transfer.self";
         if (islandManager.getPlayerIsland(buyer.getUniqueId()) != null) return "island.already-has";
-        if (price <= 0) return "number.price-positive";
+        if (!isValidPrice(price)) return "number.price-positive";
 
         SaleOffer offer = new SaleOffer(seller.getUniqueId(), island.getId(), buyer.getUniqueId(), price);
         pendingOffers.put(buyer.getUniqueId(), offer);
@@ -145,7 +145,10 @@ public final class IslandTransferManager {
         }
 
         island.setOwner(buyer.getUniqueId());
-        island.addMember(buyer.getUniqueId(), IslandRole.OWNER);
+        if (!island.getMembers().contains(buyer.getUniqueId())) {
+            island.addMember(buyer.getUniqueId(), IslandRole.OWNER);
+        }
+        island.setMemberRole(buyer.getUniqueId(), IslandRole.OWNER);
         island.setMemberRole(offer.seller, IslandRole.ADMIN);
         islandManager.registerMember(buyer.getUniqueId(), island.getId());
         islandManager.registerMember(offer.seller, island.getId());
@@ -174,5 +177,9 @@ public final class IslandTransferManager {
 
     private me.reil.skybound.core.lang.LangManager lang() {
         return ((SkyBoundPlugin) plugin).getLangManager();
+    }
+
+    private boolean isValidPrice(double price) {
+        return price > 0.0 && !Double.isNaN(price) && !Double.isInfinite(price);
     }
 }

@@ -2,6 +2,7 @@ package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.booster.Booster;
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -111,6 +112,10 @@ public final class BoostersMenu extends Menu {
             if (slots[i] == slot) { index = i; break; }
         }
         if (index < 0 || index >= boosterIds.size()) return;
+        if (!plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), IslandPermission.PURCHASE_BOOSTER)) {
+            lang().send(player, "no-permission");
+            return;
+        }
 
         if (plugin.getCoreConfig().isIslandCoreDisableBoosterMenu()
                 && plugin.getAddonRegistry().isRegistered("island-core")) {
@@ -119,6 +124,11 @@ public final class BoostersMenu extends Menu {
         }
 
         String boosterId = boosterIds.get(index);
+        if (plugin.getBoosterManager().isActive(island, boosterId)) {
+            lang().send(player, "booster.already-active");
+            new BoostersMenu(player, plugin, island).withParent(parentMenu).open();
+            return;
+        }
         boolean ok = plugin.getBoosterManager().purchase(player, island, boosterId);
         lang().send(player, ok ? "booster.activated" : "booster.cannot");
         new BoostersMenu(player, plugin, island).withParent(parentMenu).open();

@@ -57,8 +57,11 @@ public final class SchematicService {
      * @return true if pasted successfully
      */
     public boolean paste(String schematicName, Location location) {
-        if (schematicName == null || schematicName.isEmpty()) {
-            schematicName = "default.schem";
+        schematicName = normalizeSchematicName(schematicName);
+        if (schematicName == null) {
+            plugin.getLogger().warning("Unsafe schematic name requested. Using fallback island.");
+            createFallbackIsland(location);
+            return true;
         }
 
         File file = new File(schematicsFolder, schematicName);
@@ -75,6 +78,20 @@ public final class SchematicService {
         plugin.getLogger().info("No schematic found or WorldEdit unavailable. Using fallback island.");
         createFallbackIsland(location);
         return true;
+    }
+
+    private String normalizeSchematicName(String schematicName) {
+        String name = schematicName == null || schematicName.trim().isEmpty()
+                ? "default.schem"
+                : schematicName.trim();
+        name = name.replace('\\', '/');
+        if (name.contains("/") || name.contains("..")) {
+            return null;
+        }
+        if (!name.endsWith(".schem") && !name.endsWith(".schematic")) {
+            name = name + ".schem";
+        }
+        return name;
     }
 
     private boolean pasteWithWorldEdit(File file, Location location) {

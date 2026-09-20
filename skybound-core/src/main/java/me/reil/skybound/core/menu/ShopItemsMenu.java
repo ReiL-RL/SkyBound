@@ -112,6 +112,12 @@ public final class ShopItemsMenu extends Menu {
             l.send(player, shopMessageKey(result, true),
                     "{amount}", String.valueOf(amount), "{item}", clicked.getDisplayName());
         } else if (event.getClick() == ClickType.RIGHT || event.getClick() == ClickType.SHIFT_RIGHT) {
+            int available = plugin.getShopManager().countSellable(player, clicked.getId());
+            amount = Math.min(amount, available);
+            if (amount <= 0) {
+                l.send(player, "shop.no-items");
+                return;
+            }
             me.reil.skybound.core.shop.ShopManager.TransactionResult result =
                     plugin.getShopManager().sellDetailed(player, clicked.getId(), amount);
             l.send(player, shopMessageKey(result, false),

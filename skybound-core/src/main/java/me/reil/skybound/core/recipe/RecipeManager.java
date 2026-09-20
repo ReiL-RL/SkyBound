@@ -15,8 +15,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Loads and registers custom recipes from recipes.yml.
@@ -64,7 +66,7 @@ public final class RecipeManager {
             if (rs == null) continue;
 
             String type = rs.getString("type", "shaped");
-            NamespacedKey nsKey = new NamespacedKey(plugin, "skybound_" + key);
+            NamespacedKey nsKey = new NamespacedKey(plugin, "skybound_" + sanitizeKey(key));
 
             try {
                 if ("shaped".equalsIgnoreCase(type)) {
@@ -86,22 +88,28 @@ public final class RecipeManager {
         ItemStack result = parseResult(section.getConfigurationSection("result"));
         if (result == null) return;
 
-        List<String> shape = section.getStringList("shape");
+        List<String> shape = normalizeShape(section.getStringList("shape"));
         if (shape.isEmpty()) return;
 
         ShapedRecipe recipe = new ShapedRecipe(key, result);
         recipe.shape(shape.toArray(new String[0]));
 
         ConfigurationSection ingredients = section.getConfigurationSection("ingredients");
+        Set<Character> required = getShapeKeys(shape);
+        if (required.isEmpty()) return;
+        Set<Character> ingredientsSet = new HashSet<Character>();
         if (ingredients != null) {
             for (String ingKey : ingredients.getKeys(false)) {
                 String matName = ingredients.getString(ingKey, "STONE");
                 Material mat = parseMaterial(matName);
-                if (mat != null && ingKey.length() == 1) {
-                    recipe.setIngredient(ingKey.charAt(0), mat);
+                char ingredientKey = ingKey.length() == 1 ? ingKey.charAt(0) : '\0';
+                if (mat != null && required.contains(ingredientKey)) {
+                    recipe.setIngredient(ingredientKey, mat);
+                    ingredientsSet.add(ingredientKey);
                 }
             }
         }
+        if (!ingredientsSet.containsAll(required)) return;
 
         Bukkit.addRecipe(recipe);
         registeredKeys.add(key);
@@ -114,12 +122,15 @@ public final class RecipeManager {
         ShapelessRecipe recipe = new ShapelessRecipe(key, result);
 
         List<String> ingredientList = section.getStringList("ingredients");
+        int ingredients = 0;
         for (String matName : ingredientList) {
             Material mat = parseMaterial(matName);
             if (mat != null) {
                 recipe.addIngredient(mat);
+                ingredients++;
             }
         }
+        if (ingredients == 0) return;
 
         Bukkit.addRecipe(recipe);
         registeredKeys.add(key);
@@ -133,6 +144,7 @@ public final class RecipeManager {
         if (mat == null) return null;
 
         int amount = section.getInt("amount", 1);
+        amount = Math.max(1, Math.min(amount, mat.getMaxStackSize()));
         ItemStack item = new ItemStack(mat, amount);
 
         String name = section.getString("name");
@@ -170,5 +182,49 @@ public final class RecipeManager {
             return null;
         }
         return Material.matchMaterial(name.toUpperCase());
+    }
+
+    private List<String> normalizeShape(List<String> raw) {
+        List<String> shape = new ArrayList<String>();
+        int width = -1;
+        for (String row : raw) {
+            if (row == null) continue;
+            if (row.length() < 1 || row.length() > 3) return Collections.emptyList();
+            if (width == -1) {
+                width = row.length();
+            } else if (row.length() != width) {
+                return Collections.emptyList();
+            }
+            shape.add(row);
+            if (shape.size() > 3) return Collections.emptyList();
+        }
+        return shape;
+    }
+
+    private Set<Character> getShapeKeys(List<String> shape) {
+        Set<Character> keys = new HashSet<Character>();
+        for (String row : shape) {
+            for (int i = 0; i < row.length(); i++) {
+                char ch = row.charAt(i);
+                if (ch != ' ') {
+                    keys.add(ch);
+                }
+            }
+        }
+        return keys;
+    }
+
+    private String sanitizeKey(String raw) {
+        String lower = raw == null ? "recipe" : raw.toLowerCase();
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < lower.length(); i++) {
+            char ch = lower.charAt(i);
+            if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '.') {
+                out.append(ch);
+            } else {
+                out.append('_');
+            }
+        }
+        return out.length() == 0 ? "recipe" : out.toString();
     }
 }

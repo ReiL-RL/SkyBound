@@ -34,7 +34,7 @@ public final class RoleEditMenu extends Menu {
         this.plugin = plugin;
         this.island = island;
         this.role = role;
-        this.editingPerms = EnumSet.copyOf(plugin.getIslandPermissionManager().getRoleDefaults(role));
+        this.editingPerms = copyPermissions(plugin.getIslandPermissionManager().getRolePermissions(island.getId(), role));
     }
 
     /** Constructor that preserves current editing state (for refresh without losing changes). */
@@ -43,7 +43,7 @@ public final class RoleEditMenu extends Menu {
         this.plugin = plugin;
         this.island = island;
         this.role = role;
-        this.editingPerms = EnumSet.copyOf(currentEditing);
+        this.editingPerms = copyPermissions(currentEditing);
     }
 
     @Override
@@ -133,5 +133,12 @@ public final class RoleEditMenu extends Menu {
 
     private String formatPerm(IslandPermission perm) {
         return lang().get("permission." + perm.name().toLowerCase().replace('_', '-'));
+    }
+
+    private Set<IslandPermission> copyPermissions(Set<IslandPermission> permissions) {
+        if (permissions == null || permissions.isEmpty()) {
+            return EnumSet.noneOf(IslandPermission.class);
+        }
+        return EnumSet.copyOf(permissions);
     }
 }

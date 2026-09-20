@@ -54,7 +54,7 @@ public final class RolePermissionsMenu extends Menu {
         int[] slots = {9, 10, 11, 12, 13, 14};
         for (int i = 0; i < EDITABLE_ROLES.length; i++) {
             IslandRole role = EDITABLE_ROLES[i];
-            Set<IslandPermission> perms = plugin.getIslandPermissionManager().getRoleDefaults(role);
+            Set<IslandPermission> perms = plugin.getIslandPermissionManager().getRolePermissions(island.getId(), role);
 
             Material mat = getRoleMaterial(role);
             ItemStack item = new ItemStack(mat);

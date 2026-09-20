@@ -1,10 +1,11 @@
 package me.reil.skybound.core.command.island;
 
 import me.reil.skybound.api.island.Island;
-import me.reil.skybound.api.island.IslandRole;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.lang.LangManager;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
@@ -32,6 +33,12 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
                 return true;
             case "kick":
                 kick(player, args);
+                return true;
+            case "ban":
+                ban(player, args);
+                return true;
+            case "unban":
+                unban(player, args);
                 return true;
             case "leave":
                 leave(player);
@@ -63,7 +70,7 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         return context.lang();
     }
 
-    private Player findPlayer(Player player, String[] args, int index) {
+    private Player findOnlinePlayer(Player player, String[] args, int index) {
         if (args.length <= index) {
             lang().send(player, "usage", "{usage}", "/is " + args[0] + " " + lang().get("arg.player"));
             return null;
@@ -80,12 +87,11 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        Player target = findOnlinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
-        if (!island.getMemberRole(player.getUniqueId()).isAtLeast(IslandRole.MODERATOR)) {
-            lang().send(player, "no-permission");
+        if (context.lacksPermission(player, island, IslandPermission.INVITE)) {
             return;
         }
         if (plugin.getTeamManager().invite(island, player.getUniqueId(), target.getUniqueId())) {
@@ -122,16 +128,54 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         if (plugin.getTeamManager().kick(island, player.getUniqueId(), target.getUniqueId())) {
-            plugin.getIslandManager().unregisterMember(target.getUniqueId());
-            lang().send(player, "team.kicked", "{player}", target.getName());
-            lang().send(target, "team.kicked-target");
+            lang().send(player, "team.kicked", "{player}", getDisplayName(target, args[1]));
+            Player onlineTarget = target.getPlayer();
+            if (onlineTarget != null) {
+                lang().send(onlineTarget, "team.kicked-target");
+            }
         } else {
             lang().send(player, "team.cannot-kick");
+        }
+    }
+
+    private void ban(Player player, String[] args) {
+        Island island = context.requireIsland(player);
+        if (island == null) {
+            return;
+        }
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
+        if (target == null) {
+            return;
+        }
+        if (plugin.getTeamManager().ban(island, player.getUniqueId(), target.getUniqueId())) {
+            lang().send(player, "team.banned", "{player}", getDisplayName(target, args[1]));
+            Player onlineTarget = target.getPlayer();
+            if (onlineTarget != null) {
+                lang().send(onlineTarget, "team.banned-target");
+            }
+        } else {
+            lang().send(player, "team.cannot-ban");
+        }
+    }
+
+    private void unban(Player player, String[] args) {
+        Island island = context.requireIsland(player);
+        if (island == null) {
+            return;
+        }
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
+        if (target == null) {
+            return;
+        }
+        if (plugin.getTeamManager().unban(island, player.getUniqueId(), target.getUniqueId())) {
+            lang().send(player, "team.unbanned", "{player}", getDisplayName(target, args[1]));
+        } else {
+            lang().send(player, "team.cannot-unban");
         }
     }
 
@@ -145,7 +189,9 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
             return;
         }
         island.removeMember(player.getUniqueId());
-        plugin.getIslandManager().unregisterMember(player.getUniqueId());
+        plugin.getIslandManager().unregisterMember(player.getUniqueId(), island.getId());
+        plugin.getIslandPermissionManager().removeMember(island.getId(), player.getUniqueId());
+        plugin.getIslandManager().saveData();
         lang().send(player, "team.left");
     }
 
@@ -154,14 +200,17 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         if (plugin.getTeamManager().promote(island, player.getUniqueId(), target.getUniqueId())) {
             String role = island.getMemberRole(target.getUniqueId()).name();
-            lang().send(player, "team.promoted", "{player}", target.getName(), "{role}", role);
-            lang().send(target, "team.promoted-target", "{role}", role);
+            lang().send(player, "team.promoted", "{player}", getDisplayName(target, args[1]), "{role}", role);
+            Player onlineTarget = target.getPlayer();
+            if (onlineTarget != null) {
+                lang().send(onlineTarget, "team.promoted-target", "{role}", role);
+            }
         } else {
             lang().send(player, "team.cannot-promote");
         }
@@ -172,13 +221,13 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         if (plugin.getTeamManager().demote(island, player.getUniqueId(), target.getUniqueId())) {
             lang().send(player, "team.demoted",
-                    "{player}", target.getName(),
+                    "{player}", getDisplayName(target, args[1]),
                     "{role}", island.getMemberRole(target.getUniqueId()).name());
         } else {
             lang().send(player, "team.cannot-demote");
@@ -190,13 +239,16 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         if (plugin.getTeamManager().transferOwnership(island, player.getUniqueId(), target.getUniqueId())) {
-            lang().send(player, "team.transferred", "{player}", target.getName());
-            lang().send(target, "team.transferred-target");
+            lang().send(player, "team.transferred", "{player}", getDisplayName(target, args[1]));
+            Player onlineTarget = target.getPlayer();
+            if (onlineTarget != null) {
+                lang().send(onlineTarget, "team.transferred-target");
+            }
         } else {
             lang().send(player, "team.cannot-transfer");
         }
@@ -207,12 +259,12 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         boolean ok = plugin.getTeamManager().trust(island, player.getUniqueId(), target.getUniqueId());
-        lang().send(player, ok ? "team.trusted" : "team.coop-cannot", "{player}", target.getName());
+        lang().send(player, ok ? "team.trusted" : "team.coop-cannot", "{player}", getDisplayName(target, args[1]));
     }
 
     private void untrust(Player player, String[] args) {
@@ -220,12 +272,12 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         boolean ok = plugin.getTeamManager().untrust(island, player.getUniqueId(), target.getUniqueId());
-        lang().send(player, ok ? "team.untrusted" : "team.coop-cannot", "{player}", target.getName());
+        lang().send(player, ok ? "team.untrusted" : "team.coop-cannot", "{player}", getDisplayName(target, args[1]));
     }
 
     private void coop(Player player, String[] args) {
@@ -233,11 +285,35 @@ public final class IslandTeamCommandHandler implements IslandSubCommandHandler {
         if (island == null) {
             return;
         }
-        Player target = findPlayer(player, args, 1);
+        OfflinePlayer target = findKnownOfflinePlayer(player, args, 1);
         if (target == null) {
             return;
         }
         boolean ok = plugin.getTeamManager().addCoop(island, player.getUniqueId(), target.getUniqueId());
-        lang().send(player, ok ? "team.coop-added" : "team.coop-cannot", "{player}", target.getName());
+        lang().send(player, ok ? "team.coop-added" : "team.coop-cannot", "{player}", getDisplayName(target, args[1]));
+    }
+
+    private OfflinePlayer findKnownOfflinePlayer(Player player, String[] args, int index) {
+        if (args.length <= index) {
+            lang().send(player, "usage", "{usage}", "/is " + args[0] + " " + lang().get("arg.player"));
+            return null;
+        }
+
+        Player online = Bukkit.getPlayerExact(args[index]);
+        if (online != null) {
+            return online;
+        }
+
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(args[index]);
+        if (offline == null || !offline.hasPlayedBefore()) {
+            lang().send(player, "player-not-found");
+            return null;
+        }
+        return offline;
+    }
+
+    private String getDisplayName(OfflinePlayer player, String fallback) {
+        String name = player.getName();
+        return name == null || name.isEmpty() ? fallback : name;
     }
 }

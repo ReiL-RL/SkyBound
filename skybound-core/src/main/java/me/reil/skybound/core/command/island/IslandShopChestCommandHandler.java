@@ -72,6 +72,10 @@ public final class IslandShopChestCommandHandler implements IslandSubCommandHand
             context.lang().send(player, "number.price-required");
             return;
         }
+        if (!isValidPrice(price)) {
+            context.lang().send(player, "number.price-positive");
+            return;
+        }
 
         PlayerShopManager.Shop shop = plugin.getPlayerShopManager()
                 .createShop(target.getLocation(), island.getId(), player.getUniqueId(), price);
@@ -88,5 +92,9 @@ public final class IslandShopChestCommandHandler implements IslandSubCommandHand
         } else {
             context.lang().send(player, "shopchest.not-shop");
         }
+    }
+
+    private boolean isValidPrice(double price) {
+        return price > 0.0 && !Double.isNaN(price) && !Double.isInfinite(price);
     }
 }

@@ -1,6 +1,7 @@
 package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.api.upgrade.Upgrade;
 import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.ChatColor;
@@ -163,6 +164,10 @@ public final class UpgradesMenu extends Menu {
             if (slots[i] == slot) { index = i; break; }
         }
         if (index < 0 || index >= upgradeIds.size()) return;
+        if (!plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), IslandPermission.PURCHASE_UPGRADE)) {
+            lang().send(player, "no-permission");
+            return;
+        }
 
         if (plugin.getCoreConfig().isIslandCoreDisableUpgradeMenu()
                 && plugin.getAddonRegistry().isRegistered("island-core")) {
@@ -198,6 +203,7 @@ public final class UpgradesMenu extends Menu {
         int count = event.isRightClick() ? affordable : 1;
         int done = pm.prestige(player, island, count);
         if (done > 0) {
+            plugin.getIslandManager().saveData();
             int level = pm.getPrestigeLevel(island.getId());
             lang().send(player, "prestige.done",
                     "{done}", String.valueOf(done),

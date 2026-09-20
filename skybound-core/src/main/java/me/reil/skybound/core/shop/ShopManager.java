@@ -82,24 +82,39 @@ public final class ShopManager implements ShopProvider {
 
     public TransactionResult buyDetailed(Player player, String itemId, int amount) {
         ShopItemImpl item = allItems.get(itemId);
-        if (item == null || item.getBuyPrice() <= 0) return TransactionResult.NOT_AVAILABLE;
+        if (player == null || amount <= 0) return TransactionResult.NOT_AVAILABLE;
+        if (item == null || !isValidAmount(item.getBuyPrice())) return TransactionResult.NOT_AVAILABLE;
 
         double totalCost = item.getBuyPrice() * amount;
+        if (!isValidAmount(totalCost)) return TransactionResult.NOT_AVAILABLE;
         if (!economy.has(player.getUniqueId(), totalCost)) return TransactionResult.NO_MONEY;
 
         if (item.getCommands().isEmpty()) {
-            ItemStack stack = item.createStack(amount);
+            ItemStack stack = item.createStack(Math.min(amount, getMaxStackSize(item)));
+            stack.setAmount(amount);
             if (!InventoryUtil.canFit(player.getInventory(), stack)) return TransactionResult.NO_SPACE;
-            economy.withdraw(player.getUniqueId(), totalCost);
-            player.getInventory().addItem(stack);
+            if (!economy.withdraw(player.getUniqueId(), totalCost)) return TransactionResult.NO_MONEY;
+            giveItems(player, item, amount);
         } else {
-            economy.withdraw(player.getUniqueId(), totalCost);
+            if (!economy.withdraw(player.getUniqueId(), totalCost)) return TransactionResult.NO_MONEY;
             for (String cmd : item.getCommands()) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
                         cmd.replace("{player}", player.getName()).replace("{amount}", String.valueOf(amount)));
             }
         }
         return TransactionResult.SUCCESS;
+    }
+
+    public int countSellable(Player player, String itemId) {
+        ShopItemImpl item = allItems.get(itemId);
+        if (player == null || item == null || !isValidAmount(item.getSellPrice())) return 0;
+        int found = 0;
+        for (ItemStack stack : player.getInventory().getStorageContents()) {
+            if (item.matches(stack)) {
+                found += stack.getAmount();
+            }
+        }
+        return found;
     }
 
     @Override
@@ -109,13 +124,15 @@ public final class ShopManager implements ShopProvider {
 
     public TransactionResult sellDetailed(Player player, String itemId, int amount) {
         ShopItemImpl item = allItems.get(itemId);
-        if (item == null || item.getSellPrice() <= 0) return TransactionResult.NOT_AVAILABLE;
+        if (player == null || amount <= 0) return TransactionResult.NOT_AVAILABLE;
+        if (item == null || !isValidAmount(item.getSellPrice())) return TransactionResult.NOT_AVAILABLE;
 
         if (!hasSimilar(player, item, amount)) return TransactionResult.NO_ITEMS;
 
-        removeSimilar(player, item, amount);
         double totalEarned = item.getSellPrice() * amount;
-        economy.deposit(player.getUniqueId(), totalEarned);
+        if (!isValidAmount(totalEarned)) return TransactionResult.NOT_AVAILABLE;
+        if (!economy.deposit(player.getUniqueId(), totalEarned)) return TransactionResult.NOT_AVAILABLE;
+        removeSimilar(player, item, amount);
         return TransactionResult.SUCCESS;
     }
 
@@ -159,7 +176,7 @@ public final class ShopManager implements ShopProvider {
             String displayName = cs.getString("display-name", catId);
             Material icon = Material.matchMaterial(cs.getString("icon", "CHEST"));
             if (icon == null) icon = Material.CHEST;
-            int slot = cs.getInt("slot", 0);
+            int slot = clampSlot(cs.getInt("slot", 0), 0, 54);
 
             ShopCategoryImpl category = new ShopCategoryImpl(catId, displayName,
                     Collections.<String>emptyList(), icon, slot);
@@ -174,11 +191,11 @@ public final class ShopManager implements ShopProvider {
                     Material mat = Material.matchMaterial(is.getString("material", "STONE"));
                     if (mat == null) mat = Material.STONE;
                     ItemStack configuredStack = loadConfiguredItem(is);
-                    double buyPrice = is.getDouble("buy-price", 0.0);
-                    double sellPrice = is.getDouble("sell-price", 0.0);
-                    int defaultAmount = is.getInt("default-amount", 1);
-                    int itemSlot = is.getInt("slot", 0);
-                    List<String> commands = is.getStringList("commands");
+                    double buyPrice = sanitizePrice(is.getDouble("buy-price", 0.0) * config.getShopBuyMultiplier());
+                    double sellPrice = sanitizePrice(is.getDouble("sell-price", 0.0) * config.getShopSellMultiplier());
+                    int defaultAmount = clampAmount(is.getInt("default-amount", 1), configuredStack != null ? configuredStack.getType() : mat);
+                    int itemSlot = clampSlot(is.getInt("slot", 0), 0, 45);
+                    List<String> commands = sanitizeCommands(is.getStringList("commands"));
                     List<String> lore = is.getStringList("lore");
 
                     String fullId = catId + "_" + itemId;
@@ -211,7 +228,9 @@ public final class ShopManager implements ShopProvider {
             }
         }
         if (stack == null || stack.getType() == Material.AIR) return null;
-        return stack.clone();
+        ItemStack copy = stack.clone();
+        copy.setAmount(clampAmount(copy.getAmount(), copy.getType()));
+        return copy;
     }
 
     private boolean hasSimilar(Player player, ShopItemImpl item, int amount) {
@@ -240,5 +259,60 @@ public final class ShopManager implements ShopProvider {
             }
         }
         player.getInventory().setStorageContents(contents);
+    }
+
+    private void giveItems(Player player, ShopItemImpl item, int amount) {
+        int remaining = amount;
+        int maxStack = getMaxStackSize(item);
+        while (remaining > 0) {
+            int take = Math.min(maxStack, remaining);
+            player.getInventory().addItem(item.createStack(take));
+            remaining -= take;
+        }
+    }
+
+    private int getMaxStackSize(ShopItemImpl item) {
+        Material material = item == null ? null : item.getMaterial();
+        return material == null ? 64 : Math.max(1, material.getMaxStackSize());
+    }
+
+    private boolean isValidAmount(double amount) {
+        return amount > 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount);
+    }
+
+    private double sanitizePrice(double price) {
+        if (Double.isNaN(price) || Double.isInfinite(price) || price < 0.0) {
+            return 0.0;
+        }
+        return price;
+    }
+
+    private int clampAmount(int amount, Material material) {
+        int max = material == null ? 64 : Math.max(1, material.getMaxStackSize());
+        if (amount < 1) return 1;
+        return Math.min(amount, max);
+    }
+
+    private int clampSlot(int slot, int fallback, int maxExclusive) {
+        return slot < 0 || slot >= maxExclusive ? fallback : slot;
+    }
+
+    private List<String> sanitizeCommands(List<String> raw) {
+        List<String> commands = new ArrayList<String>();
+        for (String command : raw) {
+            if (command == null) continue;
+            String sanitized = command.trim();
+            if (sanitized.startsWith("/")) {
+                sanitized = sanitized.substring(1).trim();
+            }
+            if (sanitized.length() > 256) {
+                plugin.getLogger().warning("Ignoring overlong shop command.");
+                continue;
+            }
+            if (!sanitized.isEmpty()) {
+                commands.add(sanitized);
+            }
+        }
+        return commands;
     }
 }

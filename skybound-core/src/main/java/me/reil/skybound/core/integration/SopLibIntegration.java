@@ -1,52 +1,49 @@
 package me.reil.skybound.core.integration;
 
-import net.enelson.sopli.lib.SopLib;
-import net.enelson.sopli.lib.database.DatabaseConfig;
-import net.enelson.sopli.lib.database.DatabaseService;
-import net.enelson.sopli.lib.database.SopDatabase;
-import net.enelson.sopli.lib.item.ItemUtils;
-import net.enelson.sopli.lib.text.TextUtils;
-import net.enelson.sopli.lib.util.Util;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Integration with SopLib for multi-version support.
- * Provides:
- * - Version-safe item creation (NBT, custom model data, heads)
- * - HikariCP database pooling
- * - Hex color / MiniMessage text formatting
- * - Location serialization across versions
- * - Protection checks
+ * SopLib runtime integration for multi-version support.
  *
- * When SopLib is not present, falls back to basic Bukkit API.
+ * Reflection keeps SopLib optional at compile time, so the project can be
+ * built without publishing SopLib to Maven. On the server, SopLib should be
+ * installed to enable multi-version item/text/location/protection helpers.
  */
 public final class SopLibIntegration {
 
     private final JavaPlugin plugin;
     private boolean available;
-    private SopLib sopLib;
+    private Object sopLib;
 
     public SopLibIntegration(JavaPlugin plugin) {
         this.plugin = plugin;
         this.available = false;
         try {
             if (Bukkit.getPluginManager().isPluginEnabled("SopLib")) {
-                this.sopLib = SopLib.getInstance();
+                Class<?> sopLibClass = Class.forName("net.enelson.sopli.lib.SopLib");
+                this.sopLib = sopLibClass.getMethod("getInstance").invoke(null);
                 if (this.sopLib != null) {
                     this.available = true;
                     plugin.getLogger().info("SopLib integration enabled (multi-version support active).");
                 }
             }
-        } catch (NoClassDefFoundError e) {
-            // SopLib not on classpath
+        } catch (Throwable ignored) {
+            this.available = false;
+            this.sopLib = null;
         }
 
         if (!available) {
-            plugin.getLogger().info("SopLib not found. Using basic Bukkit API (single-version mode).");
+            plugin.getLogger().warning("SopLib not found. Multi-version helpers are disabled; using basic Bukkit fallback.");
         }
     }
 
@@ -54,147 +51,180 @@ public final class SopLibIntegration {
         return available;
     }
 
-    // === Database ===
-
-    /**
-     * Create a MySQL database connection pool via SopLib's HikariCP wrapper.
-     * @return SopDatabase instance, or null if SopLib unavailable
-     */
-    public SopDatabase createDatabase(String host, int port, String database, String username, String password, String poolName) {
+    public Object createDatabase(String host, int port, String database, String username, String password, String poolName) {
         if (!available) return null;
-        DatabaseConfig config = DatabaseConfig.mysql(host, port, database)
-                .credentials(username, password)
-                .poolName(poolName)
-                .maximumPoolSize(10)
-                .minimumIdle(2)
-                .build();
-        return sopLib.getDatabaseService().createDatabase(config);
+        try {
+            Class<?> configClass = Class.forName("net.enelson.sopli.lib.database.DatabaseConfig");
+            Object builder = configClass.getMethod("mysql", String.class, int.class, String.class)
+                    .invoke(null, host, port, database);
+            builder = invoke(builder, "credentials", new Class<?>[]{String.class, String.class}, username, password);
+            builder = invoke(builder, "poolName", new Class<?>[]{String.class}, poolName);
+            builder = invoke(builder, "maximumPoolSize", new Class<?>[]{int.class}, 10);
+            builder = invoke(builder, "minimumIdle", new Class<?>[]{int.class}, 2);
+            Object config = invoke(builder, "build", new Class<?>[0]);
+            Object databaseService = invoke(sopLib, "getDatabaseService", new Class<?>[0]);
+            return invoke(databaseService, "createDatabase", new Class<?>[]{configClass}, config);
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Failed to create SopLib database: " + t.getMessage());
+            return null;
+        }
     }
 
-    // === Items (multi-version safe) ===
-
-    /**
-     * Create an ItemStack with version-safe NBT, model data, and enchantments.
-     */
-    public ItemStack createItem(String material, int amount, Object modelData, String name, List<String> enchantments, List<String> lore, List<String> nbts) {
+    public ItemStack createItem(String material, int amount, Object modelData, String name,
+                                List<String> enchantments, List<String> lore, List<String> nbts) {
         if (!available) return null;
-        return sopLib.getItemUtils().createItem(material, amount, modelData, name, enchantments, lore, nbts);
+        try {
+            Object itemUtils = invoke(sopLib, "getItemUtils", new Class<?>[0]);
+            return (ItemStack) invoke(itemUtils, "createItem",
+                    new Class<?>[]{String.class, int.class, Object.class, String.class, List.class, List.class, List.class},
+                    material, amount, modelData, name, enchantments, lore, nbts);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
-    /**
-     * Get a player head by texture value (version-safe).
-     */
     public ItemStack getHead(String textureValue, String displayName) {
         if (!available) return null;
-        return sopLib.getItemUtils().getHeadTexture(textureValue, displayName);
+        try {
+            Object itemUtils = invoke(sopLib, "getItemUtils", new Class<?>[0]);
+            return (ItemStack) invoke(itemUtils, "getHeadTexture",
+                    new Class<?>[]{String.class, String.class}, textureValue, displayName);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
-    /**
-     * Set custom model data on an item (version-safe, handles 1.14+ and 1.21.2+ component model).
-     */
     public void setCustomModelData(ItemStack item, Object... model) {
         if (!available || item == null) return;
-        sopLib.getItemUtils().setCustomModelData(item, model);
+        try {
+            Object itemUtils = invoke(sopLib, "getItemUtils", new Class<?>[0]);
+            Method method = itemUtils.getClass().getMethod("setCustomModelData", ItemStack.class, Object[].class);
+            method.invoke(itemUtils, new Object[]{item, model});
+        } catch (Throwable ignored) {
+        }
     }
 
-    /**
-     * Set a custom NBT key on an item for identification.
-     */
     public void setCustomItemKey(ItemStack item, String key, String fallback) {
         if (!available || item == null) return;
-        sopLib.getItemUtils().setCustomItemKey(item, key, fallback);
+        try {
+            Object itemUtils = invoke(sopLib, "getItemUtils", new Class<?>[0]);
+            invoke(itemUtils, "setCustomItemKey",
+                    new Class<?>[]{ItemStack.class, String.class, String.class}, item, key, fallback);
+        } catch (Throwable ignored) {
+        }
     }
 
-    /**
-     * Get the custom NBT key from an item.
-     */
     public String getCustomItemKey(ItemStack item) {
         if (!available || item == null) return null;
-        return sopLib.getItemUtils().getCustomItemKey(item);
+        try {
+            Object itemUtils = invoke(sopLib, "getItemUtils", new Class<?>[0]);
+            return (String) invoke(itemUtils, "getCustomItemKey", new Class<?>[]{ItemStack.class}, item);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
-    // === Text (hex colors, MiniMessage) ===
-
-    /**
-     * Colorize text with hex colors (&#RRGGBB), MiniMessage tags, and legacy & codes.
-     * Works on all server versions.
-     */
     public String colorize(String text) {
         if (!available || text == null) {
-            // Fallback: basic & color codes only
-            if (text == null) return "";
-            return org.bukkit.ChatColor.translateAlternateColorCodes('&', text);
+            return text == null ? "" : ChatColor.translateAlternateColorCodes('&', text);
         }
-        return sopLib.getTextUtils().color(text);
+        try {
+            Object textUtils = invoke(sopLib, "getTextUtils", new Class<?>[0]);
+            return (String) invoke(textUtils, "color", new Class<?>[]{String.class}, text);
+        } catch (Throwable t) {
+            return ChatColor.translateAlternateColorCodes('&', text);
+        }
     }
 
-    /**
-     * Colorize a list of strings.
-     */
+    @SuppressWarnings("unchecked")
     public List<String> colorize(List<String> lines) {
         if (!available || lines == null) {
-            if (lines == null) return java.util.Collections.emptyList();
-            java.util.List<String> result = new java.util.ArrayList<String>();
+            if (lines == null) return Collections.emptyList();
+            List<String> result = new ArrayList<String>();
             for (String line : lines) {
-                result.add(org.bukkit.ChatColor.translateAlternateColorCodes('&', line));
+                result.add(ChatColor.translateAlternateColorCodes('&', line));
             }
             return result;
         }
-        return sopLib.getTextUtils().color(lines);
-    }
-
-    // === Util (location serialization, versioned messages) ===
-
-    /**
-     * Serialize a location to a compact string (version-safe).
-     */
-    public String serializeLocation(org.bukkit.Location location) {
-        if (!available || location == null) {
-            // Fallback
-            if (location == null) return "";
-            return location.getWorld().getName() + ":" + location.getX() + ":" + location.getY() + ":" + location.getZ()
-                    + ":" + location.getYaw() + ":" + location.getPitch();
+        try {
+            Object textUtils = invoke(sopLib, "getTextUtils", new Class<?>[0]);
+            return (List<String>) invoke(textUtils, "color", new Class<?>[]{List.class}, lines);
+        } catch (Throwable t) {
+            List<String> result = new ArrayList<String>();
+            for (String line : lines) {
+                result.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
+            return result;
         }
-        return sopLib.getUtil().getSerializedLocation(location);
     }
 
-    /**
-     * Deserialize a location from a compact string (version-safe).
-     */
-    public org.bukkit.Location deserializeLocation(String serialized) {
+    public String serializeLocation(Location location) {
+        if (!available || location == null) {
+            return serializeLocationFallback(location);
+        }
+        try {
+            Object util = invoke(sopLib, "getUtil", new Class<?>[0]);
+            return (String) invoke(util, "getSerializedLocation", new Class<?>[]{Location.class}, location);
+        } catch (Throwable t) {
+            return serializeLocationFallback(location);
+        }
+    }
+
+    public Location deserializeLocation(String serialized) {
         if (!available || serialized == null || serialized.isEmpty()) {
             return null;
         }
-        return sopLib.getUtil().getDeserializedLocation(serialized);
+        try {
+            Object util = invoke(sopLib, "getUtil", new Class<?>[0]);
+            return (Location) invoke(util, "getDeserializedLocation", new Class<?>[]{String.class}, serialized);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
-    /**
-     * Send a version-safe message to a player (handles Adventure/legacy).
-     */
-    public void sendMessage(org.bukkit.entity.Player player, String message) {
+    public void sendMessage(Player player, String message) {
         if (!available || player == null || message == null) {
-            if (player != null && message != null) {
-                player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
-            }
+            sendMessageFallback(player, message);
             return;
         }
-        sopLib.getUtil().sendVersionedMessage(player, message);
+        try {
+            Object util = invoke(sopLib, "getUtil", new Class<?>[0]);
+            invoke(util, "sendVersionedMessage", new Class<?>[]{Player.class, String.class}, player, message);
+        } catch (Throwable t) {
+            sendMessageFallback(player, message);
+        }
     }
 
-    // === Protection ===
-
-    /**
-     * Check if a player can build at a location (integrates with WorldGuard etc via SopLib).
-     */
-    public boolean canBuild(org.bukkit.entity.Player player, org.bukkit.Location location) {
-        if (!available) return true; // No protection check without SopLib
-        return sopLib.getProtectionService().canBuild(player, location);
+    public boolean canBuild(Player player, Location location) {
+        if (!available) return true;
+        try {
+            Object protectionService = invoke(sopLib, "getProtectionService", new Class<?>[0]);
+            Boolean result = (Boolean) invoke(protectionService, "canBuild",
+                    new Class<?>[]{Player.class, Location.class}, player, location);
+            return result == null || result;
+        } catch (Throwable t) {
+            return true;
+        }
     }
 
-    /**
-     * Shutdown SopLib database connections.
-     */
     public void shutdown() {
-        // SopLib manages its own lifecycle via its plugin
+        // SopLib manages its own lifecycle via its plugin.
+    }
+
+    private String serializeLocationFallback(Location location) {
+        if (location == null || location.getWorld() == null) return "";
+        return location.getWorld().getName() + ":" + location.getX() + ":" + location.getY() + ":" + location.getZ()
+                + ":" + location.getYaw() + ":" + location.getPitch();
+    }
+
+    private void sendMessageFallback(Player player, String message) {
+        if (player != null && message != null) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+        }
+    }
+
+    private Object invoke(Object target, String methodName, Class<?>[] parameterTypes, Object... args) throws Exception {
+        Method method = target.getClass().getMethod(methodName, parameterTypes);
+        return method.invoke(target, args);
     }
 }

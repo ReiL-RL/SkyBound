@@ -41,28 +41,32 @@ public final class BankManager implements BankProvider {
 
     @Override
     public boolean deposit(Player player, Island island, double amount) {
-        if (amount <= 0 || !economy.has(player.getUniqueId(), amount)) return false;
+        if (player == null || island == null || !isValidAmount(amount)) return false;
+        if (!economy.has(player.getUniqueId(), amount)) return false;
 
         double limit = getBankLimit(island);
         if (island.getBankBalance() + amount > limit) return false;
 
-        economy.withdraw(player.getUniqueId(), amount);
+        if (!economy.withdraw(player.getUniqueId(), amount)) return false;
         island.setBankBalance(island.getBankBalance() + amount);
         recordTransaction(island.getId(), player.getUniqueId(), BankTransaction.TransactionType.DEPOSIT, amount);
         logToIsland(island, player, me.reil.skybound.core.island.IslandLogEntry.LogAction.BANK_DEPOSIT,
                 String.format("%.0f", amount));
+        islandManager.saveData();
         return true;
     }
 
     @Override
     public boolean withdraw(Player player, Island island, double amount) {
-        if (amount <= 0 || island.getBankBalance() < amount) return false;
+        if (player == null || island == null || !isValidAmount(amount)) return false;
+        if (island.getBankBalance() < amount) return false;
 
+        if (!economy.deposit(player.getUniqueId(), amount)) return false;
         island.setBankBalance(island.getBankBalance() - amount);
-        economy.deposit(player.getUniqueId(), amount);
         recordTransaction(island.getId(), player.getUniqueId(), BankTransaction.TransactionType.WITHDRAW, amount);
         logToIsland(island, player, me.reil.skybound.core.island.IslandLogEntry.LogAction.BANK_WITHDRAW,
                 String.format("%.0f", amount));
+        islandManager.saveData();
         return true;
     }
 
@@ -78,9 +82,18 @@ public final class BankManager implements BankProvider {
 
     @Override
     public double getBankLimit(Island island) {
-        // Base limit + upgrade bonus
-        // TODO: Factor in bank upgrade level
-        return 1000000.0;
+        double bonus = 0.0;
+        try {
+            if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin && island != null) {
+                bonus = ((me.reil.skybound.core.SkyBoundPlugin) plugin).getUpgradeManager().getEffectiveValue(island, "bank_capacity");
+            }
+        } catch (RuntimeException ignored) {
+            bonus = 0.0;
+        }
+        if (Double.isNaN(bonus) || Double.isInfinite(bonus) || bonus < 0.0) {
+            bonus = 0.0;
+        }
+        return config.getBaseBankLimit() + bonus;
     }
 
     @Override
@@ -96,9 +109,24 @@ public final class BankManager implements BankProvider {
      * Withdraw from bank internally (for upgrades/boosters).
      */
     public boolean withdrawInternal(Island island, double amount) {
+        if (island == null || !isValidAmount(amount)) return false;
         if (island.getBankBalance() < amount) return false;
         island.setBankBalance(island.getBankBalance() - amount);
+        islandManager.saveData();
         return true;
+    }
+
+    public boolean depositInternal(Island island, double amount) {
+        if (island == null || !isValidAmount(amount)) return false;
+        double limit = getBankLimit(island);
+        if (island.getBankBalance() + amount > limit) return false;
+        island.setBankBalance(island.getBankBalance() + amount);
+        islandManager.saveData();
+        return true;
+    }
+
+    private boolean isValidAmount(double amount) {
+        return amount > 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount);
     }
 
     private void recordTransaction(String islandId, java.util.UUID playerId, BankTransaction.TransactionType type, double amount) {

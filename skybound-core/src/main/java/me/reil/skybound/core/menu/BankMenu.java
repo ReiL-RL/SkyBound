@@ -1,6 +1,7 @@
 package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.lang.LangManager;
 import org.bukkit.ChatColor;
@@ -112,13 +113,25 @@ public final class BankMenu extends Menu {
 
         LangManager l = lang();
         if (deposit) {
+            if (!hasPermission(IslandPermission.BANK_DEPOSIT)) {
+                l.send(player, "no-permission");
+                return;
+            }
             boolean ok = plugin.getBankManager().deposit(player, island, amount);
             l.send(player, ok ? "bank.deposited" : "bank.cannot-deposit", "{amount}", String.valueOf((int) amount));
         } else {
+            if (!hasPermission(IslandPermission.BANK_WITHDRAW)) {
+                l.send(player, "no-permission");
+                return;
+            }
             boolean ok = plugin.getBankManager().withdraw(player, island, amount);
             l.send(player, ok ? "bank.withdrawn" : "bank.cannot-withdraw", "{amount}", String.valueOf((int) amount));
         }
         new BankMenu(player, plugin, island).withParent(parentMenu).open();
+    }
+
+    private boolean hasPermission(IslandPermission permission) {
+        return plugin.getIslandPermissionManager().hasPermission(island, player.getUniqueId(), permission);
     }
 
     private void depositBtn(int slot, double amount) {

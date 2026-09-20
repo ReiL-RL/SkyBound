@@ -141,6 +141,7 @@ public final class MissionManager implements MissionProvider {
             // Check completion
             if (!progress.isCompleted() && progress.checkCompletion(mission)) {
                 progress.markCompleted();
+                saveProgress();
 
                 Player player = Bukkit.getPlayer(playerId);
                 if (player != null) {
@@ -173,7 +174,10 @@ public final class MissionManager implements MissionProvider {
 
         // Money reward
         if (mission.getMoneyReward() > 0) {
-            economy.deposit(player.getUniqueId(), mission.getMoneyReward());
+            if (!economy.deposit(player.getUniqueId(), mission.getMoneyReward())) {
+                plugin.getLogger().warning("Could not pay mission reward '" + missionId + "' to " + player.getName() + ".");
+                return false;
+            }
         }
 
         // Island XP reward
@@ -181,6 +185,7 @@ public final class MissionManager implements MissionProvider {
             Island island = islandManager.getPlayerIsland(player.getUniqueId());
             if (island != null) {
                 island.addExperience(mission.getXpReward());
+                islandManager.saveData();
             }
         }
 
@@ -191,11 +196,14 @@ public final class MissionManager implements MissionProvider {
 
         // Command rewards
         for (String cmd : mission.getCommandRewards()) {
-            String resolved = cmd.replace("{player}", player.getName());
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
+            String resolved = sanitizeCommand(cmd).replace("{player}", player.getName());
+            if (!resolved.isEmpty()) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
+            }
         }
 
         progress.markClaimed();
+        saveProgress();
         return true;
     }
 
@@ -321,8 +329,8 @@ public final class MissionManager implements MissionProvider {
         // Format: "MATERIAL:amount" or "MATERIAL"
         String[] parts = itemStr.split(":");
         Material mat = Material.matchMaterial(parts[0]);
-        if (mat == null) return;
-        int amount = parts.length > 1 ? parseInt(parts[1], 1) : 1;
+        if (mat == null || mat == Material.AIR) return;
+        int amount = clampAmount(parts.length > 1 ? parseInt(parts[1], 1) : 1, mat);
         ItemStack stack = new ItemStack(mat, amount);
         player.getInventory().addItem(stack);
     }
@@ -345,13 +353,13 @@ public final class MissionManager implements MissionProvider {
             String category = ms.getString("category", "general");
             Material icon = Material.matchMaterial(ms.getString("icon", "PAPER"));
             if (icon == null) icon = Material.PAPER;
-            int requiredLevel = ms.getInt("required-level", 1);
+            int requiredLevel = Math.max(0, ms.getInt("required-level", 1));
             List<String> prerequisites = ms.getStringList("prerequisites");
             boolean repeatable = ms.getBoolean("repeatable", false);
-            int cooldownSeconds = ms.getInt("cooldown-seconds", 0);
-            int timeLimitSeconds = ms.getInt("time-limit-seconds", 0);
+            int cooldownSeconds = Math.max(0, ms.getInt("cooldown-seconds", 0));
+            int timeLimitSeconds = Math.max(0, ms.getInt("time-limit-seconds", 0));
             List<String> lore = ms.getStringList("lore");
-            String resetType = ms.getString("reset", null);
+            String resetType = normalizeResetType(ms.getString("reset", null));
 
             // Conditions
             ConditionMode mode = ConditionMode.AND;
@@ -369,6 +377,7 @@ public final class MissionManager implements MissionProvider {
                         String typeStr = String.valueOf(condMap.get("type"));
                         String target = condMap.containsKey("target") ? String.valueOf(condMap.get("target")) : "";
                         int amount = condMap.containsKey("amount") ? parseInt(String.valueOf(condMap.get("amount")), 1) : 1;
+                        amount = Math.max(1, amount);
 
                         MissionType type = parseMissionType(typeStr);
                         if (type != null) {
@@ -382,9 +391,9 @@ public final class MissionManager implements MissionProvider {
 
             // Rewards
             ConfigurationSection rewards = ms.getConfigurationSection("rewards");
-            double moneyReward = rewards != null ? rewards.getDouble("money", 0.0) : 0.0;
-            long xpReward = rewards != null ? rewards.getLong("island-xp", 0L) : 0L;
-            List<String> commandRewards = rewards != null ? rewards.getStringList("commands") : Collections.<String>emptyList();
+            double moneyReward = sanitizeMoney((rewards != null ? rewards.getDouble("money", 0.0) : 0.0) * config.getMissionMoneyMultiplier());
+            long xpReward = scaleLongReward(Math.max(0L, rewards != null ? rewards.getLong("island-xp", 0L) : 0L), config.getMissionXpMultiplier());
+            List<String> commandRewards = rewards != null ? sanitizeCommands(rewards.getStringList("commands")) : Collections.<String>emptyList();
 
             List<String> itemRewards = new ArrayList<String>();
             if (rewards != null) {
@@ -392,6 +401,12 @@ public final class MissionManager implements MissionProvider {
                 for (Map<?, ?> itemMap : itemsList) {
                     String material = String.valueOf(itemMap.get("material"));
                     int amount = itemMap.containsKey("amount") ? parseInt(String.valueOf(itemMap.get("amount")), 1) : 1;
+                    Material rewardMaterial = Material.matchMaterial(material);
+                    if (rewardMaterial == null || rewardMaterial == Material.AIR) {
+                        plugin.getLogger().warning("missions.yml: mission '" + key + "' has unknown reward material '" + material + "'.");
+                        continue;
+                    }
+                    amount = clampAmount(amount, rewardMaterial);
                     itemRewards.add(material + ":" + amount);
                 }
             }
@@ -422,9 +437,67 @@ public final class MissionManager implements MissionProvider {
         }
     }
 
+    private long scaleLongReward(long base, double multiplier) {
+        if (base <= 0L) return 0L;
+        if (Double.isNaN(multiplier) || Double.isInfinite(multiplier) || multiplier < 0.0) return base;
+        double scaled = base * multiplier;
+        if (scaled >= Long.MAX_VALUE) return Long.MAX_VALUE;
+        return Math.max(0L, Math.round(scaled));
+    }
+
+    private double sanitizeMoney(double amount) {
+        return amount > 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount) ? amount : 0.0;
+    }
+
+    private int clampAmount(int amount, Material material) {
+        int max = material == null ? 64 : Math.max(1, material.getMaxStackSize());
+        if (amount < 1) return 1;
+        return Math.min(amount, max);
+    }
+
+    private String normalizeResetType(String resetType) {
+        if (resetType == null || resetType.trim().isEmpty()) return null;
+        String normalized = resetType.trim().toLowerCase();
+        if ("daily".equals(normalized) || "weekly".equals(normalized)) {
+            return normalized;
+        }
+        plugin.getLogger().warning("missions.yml: unknown reset type '" + resetType + "', ignoring it.");
+        return null;
+    }
+
+    private List<String> sanitizeCommands(List<String> raw) {
+        List<String> commands = new ArrayList<String>();
+        for (String command : raw) {
+            String sanitized = sanitizeCommand(command);
+            if (!sanitized.isEmpty()) {
+                commands.add(sanitized);
+            }
+        }
+        return commands;
+    }
+
+    private String sanitizeCommand(String command) {
+        if (command == null) return "";
+        String sanitized = command.trim();
+        if (sanitized.startsWith("/")) {
+            sanitized = sanitized.substring(1).trim();
+        }
+        if (sanitized.length() > 256) {
+            plugin.getLogger().warning("Ignoring overlong mission reward command.");
+            return "";
+        }
+        return sanitized;
+    }
+
     private void sendLang(Player player, String key, String... replacements) {
         if (plugin instanceof SkyBoundPlugin) {
             ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
+        }
+    }
+
+    private void saveProgress() {
+        if (plugin instanceof SkyBoundPlugin) {
+            ((SkyBoundPlugin) plugin).getStorageManager().saveMissionProgress(playerProgress);
         }
     }
 }

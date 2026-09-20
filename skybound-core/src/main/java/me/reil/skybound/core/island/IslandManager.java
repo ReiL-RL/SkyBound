@@ -5,6 +5,7 @@ import me.reil.skybound.api.event.IslandDeleteEvent;
 import me.reil.skybound.api.event.IslandLevelUpEvent;
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.island.IslandProvider;
+import me.reil.skybound.api.island.IslandRole;
 import me.reil.skybound.core.config.CoreConfig;
 import me.reil.skybound.core.storage.StorageManager;
 import org.bukkit.Bukkit;
@@ -45,7 +46,9 @@ public final class IslandManager implements IslandProvider {
             islands.put(entry.getKey(), entry.getValue());
             indexIsland(entry.getValue());
             for (UUID member : entry.getValue().getMembers()) {
-                playerIslandMap.put(member, entry.getKey());
+                if (entry.getValue().getMemberRole(member).isAtLeast(IslandRole.MEMBER)) {
+                    playerIslandMap.put(member, entry.getKey());
+                }
             }
         }
         nextGridIndex = islands.size();
@@ -139,7 +142,9 @@ public final class IslandManager implements IslandProvider {
                 p.teleport(spawn);
                 sendLang(p, "island.deleted");
             }
-            playerIslandMap.remove(member);
+            if (island.getMemberRole(member).isAtLeast(IslandRole.MEMBER)) {
+                playerIslandMap.remove(member);
+            }
         }
 
         // Clear island blocks asynchronously on next tick
@@ -162,25 +167,48 @@ public final class IslandManager implements IslandProvider {
     public boolean regenerateIsland(String islandId, String schematicName) {
         IslandImpl island = islands.get(islandId);
         if (island == null) return false;
-        // Clear blocks in radius
-        clearIslandBlocks(island);
-        // Schematic paste is handled by the caller (IslandCommand.cmdRegen)
-        plugin.getLogger().info("Island regenerated: " + islandId + " (schematic: " + schematicName + ")");
 
-        // Notify Island Core addon to give cores
+        clearIslandBlocks(island);
+        finishRegeneration(island, schematicName);
+        return true;
+    }
+
+    public boolean regenerateIslandBatched(final String islandId, final String schematicName, final Runnable done) {
+        final IslandImpl island = islands.get(islandId);
+        if (island == null) return false;
+
+        clearIslandBlocksBatched(island, new Runnable() {
+            @Override
+            public void run() {
+                finishRegeneration(island, schematicName);
+                if (done != null) {
+                    done.run();
+                }
+            }
+        });
+        return true;
+    }
+
+    private void finishRegeneration(final IslandImpl island, String schematicName) {
+        plugin.getLogger().info("Island regenerated: " + island.getId() + " (schematic: " + schematicName + ")");
+        notifyIslandCoreOnRegen(island);
+        saveData();
+    }
+
+    private void notifyIslandCoreOnRegen(final IslandImpl island) {
         try {
-            org.bukkit.plugin.Plugin islandCorePlugin = Bukkit.getPluginManager().getPlugin("SkyBound-IslandCore");
+            final org.bukkit.plugin.Plugin islandCorePlugin = Bukkit.getPluginManager().getPlugin("SkyBound-IslandCore");
             if (islandCorePlugin != null && islandCorePlugin.isEnabled()) {
                 org.bukkit.entity.Player owner = Bukkit.getPlayer(island.getOwner());
                 if (owner != null) {
                     final org.bukkit.entity.Player finalOwner = owner;
-                    Bukkit.getScheduler().runTaskLater((org.bukkit.plugin.java.JavaPlugin) plugin, new Runnable() {
+                    Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
                         @Override
                         public void run() {
                             try {
                                 java.lang.reflect.Method m = islandCorePlugin.getClass().getMethod("onIslandCreated", org.bukkit.entity.Player.class, String.class);
                                 m.setAccessible(true);
-                                m.invoke(islandCorePlugin, finalOwner, islandId);
+                                m.invoke(islandCorePlugin, finalOwner, island.getId());
                             } catch (Exception e) {
                                 plugin.getLogger().warning("Failed to notify IslandCore on regen: " + e.getMessage());
                             }
@@ -189,9 +217,6 @@ public final class IslandManager implements IslandProvider {
                 }
             }
         } catch (Exception ignored) {}
-
-        saveData();
-        return true;
     }
 
     @Override
@@ -249,6 +274,14 @@ public final class IslandManager implements IslandProvider {
         playerIslandMap.remove(playerId);
     }
 
+    public void unregisterMember(UUID playerId, String islandId) {
+        if (playerId == null || islandId == null) return;
+        String currentIslandId = playerIslandMap.get(playerId);
+        if (islandId.equals(currentIslandId)) {
+            playerIslandMap.remove(playerId);
+        }
+    }
+
     /**
      * Recalculate island value based on placed blocks.
      * If the island-core addon is registered AND configured to drive value,
@@ -268,13 +301,15 @@ public final class IslandManager implements IslandProvider {
         int radius = island.getRadius();
         int cx = center.getBlockX();
         int cz = center.getBlockZ();
+        int minY = getMinHeight(world);
+        int maxY = world.getMaxHeight();
         double totalValue = 0.0;
 
         Map<String, Integer> blockValues = config.getBlockValues();
 
         for (int x = cx - radius; x <= cx + radius; x++) {
             for (int z = cz - radius; z <= cz + radius; z++) {
-                for (int y = 0; y < world.getMaxHeight(); y++) {
+                for (int y = minY; y < maxY; y++) {
                     Block block = world.getBlockAt(x, y, z);
                     Material mat = block.getType();
                     if (mat == Material.AIR) continue;
@@ -288,6 +323,67 @@ public final class IslandManager implements IslandProvider {
 
         island.setValue(totalValue);
         return totalValue;
+    }
+
+    public boolean recalculateValueBatched(final IslandImpl island, final Runnable done) {
+        if (island == null) return false;
+        if (isIslandCoreActive()) {
+            if (done != null) done.run();
+            return true;
+        }
+
+        Location center = island.getCenter();
+        final World world = center.getWorld();
+        if (world == null) return false;
+
+        final int radius = island.getRadius();
+        final int minX = center.getBlockX() - radius;
+        final int maxX = center.getBlockX() + radius;
+        final int minZ = center.getBlockZ() - radius;
+        final int maxZ = center.getBlockZ() + radius;
+        final int minY = getMinHeight(world);
+        final int maxY = world.getMaxHeight();
+        final int blocksPerTick = Math.max(1, plugin.getConfig().getInt("performance.value-blocks-per-tick", 4000));
+        final Map<String, Integer> blockValues = config.getBlockValues();
+
+        new BukkitRunnable() {
+            private int x = minX;
+            private int z = minZ;
+            private int y = minY;
+            private double totalValue = 0.0;
+
+            @Override
+            public void run() {
+                int processed = 0;
+                while (x <= maxX && processed < blocksPerTick) {
+                    Material mat = world.getBlockAt(x, y, z).getType();
+                    if (mat != Material.AIR) {
+                        Integer value = blockValues.get(mat.name());
+                        if (value != null) {
+                            totalValue += value;
+                        }
+                    }
+
+                    processed++;
+                    y++;
+                    if (y >= maxY) {
+                        y = minY;
+                        z++;
+                        if (z > maxZ) {
+                            z = minZ;
+                            x++;
+                        }
+                    }
+                }
+
+                if (x > maxX) {
+                    island.setValue(totalValue);
+                    if (done != null) done.run();
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+        return true;
     }
 
     /**
@@ -377,10 +473,12 @@ public final class IslandManager implements IslandProvider {
         int radius = island.getRadius();
         int cx = center.getBlockX();
         int cz = center.getBlockZ();
+        int minY = getMinHeight(world);
+        int maxY = world.getMaxHeight();
 
         for (int x = cx - radius; x <= cx + radius; x++) {
             for (int z = cz - radius; z <= cz + radius; z++) {
-                for (int y = 0; y < world.getMaxHeight(); y++) {
+                for (int y = minY; y < maxY; y++) {
                     world.getBlockAt(x, y, z).setType(Material.AIR, false);
                 }
             }
@@ -403,13 +501,14 @@ public final class IslandManager implements IslandProvider {
         final int maxX = center.getBlockX() + radius;
         final int minZ = center.getBlockZ() - radius;
         final int maxZ = center.getBlockZ() + radius;
+        final int minY = getMinHeight(world);
         final int maxY = world.getMaxHeight();
-        final int blocksPerTick = 4000;
+        final int blocksPerTick = Math.max(1, plugin.getConfig().getInt("performance.regen-blocks-per-tick", 4000));
 
         new BukkitRunnable() {
             private int x = minX;
             private int z = minZ;
-            private int y = 0;
+            private int y = minY;
 
             @Override
             public void run() {
@@ -420,7 +519,7 @@ public final class IslandManager implements IslandProvider {
 
                     y++;
                     if (y >= maxY) {
-                        y = 0;
+                        y = minY;
                         z++;
                         if (z > maxZ) {
                             z = minZ;
@@ -451,7 +550,11 @@ public final class IslandManager implements IslandProvider {
         int cz = center.getBlockZ();
 
         int removed = 0;
-        for (org.bukkit.entity.Entity entity : world.getEntities()) {
+        for (org.bukkit.entity.Entity entity : world.getNearbyEntities(
+                center,
+                radius + 1.0,
+                Math.max(1.0, world.getMaxHeight() - getMinHeight(world)),
+                radius + 1.0)) {
             // Skip players
             if (entity instanceof org.bukkit.entity.Player) continue;
 
@@ -498,6 +601,17 @@ public final class IslandManager implements IslandProvider {
         }
 
         return new Location(world, x * spacing, baseY, z * spacing);
+    }
+
+    private int getMinHeight(World world) {
+        try {
+            Object value = world.getClass().getMethod("getMinHeight").invoke(world);
+            if (value instanceof Integer) {
+                return ((Integer) value).intValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return 0;
     }
 
     private void indexIsland(IslandImpl island) {

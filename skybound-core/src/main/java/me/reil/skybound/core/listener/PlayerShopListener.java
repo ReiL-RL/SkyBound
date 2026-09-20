@@ -41,6 +41,10 @@ public final class PlayerShopListener implements Listener {
         if (p.getUniqueId().equals(shop.owner)) return; // owner uses chest normally
 
         event.setCancelled(true);
+        if (!isValidPrice(shop.price)) {
+            plugin.getLangManager().send(p, "playershop.invalid-price");
+            return;
+        }
 
         // Buy first item with money
         Chest chest = (Chest) block.getState();
@@ -71,8 +75,15 @@ public final class PlayerShopListener implements Listener {
             plugin.getLangManager().send(p, "playershop.no-space");
             return;
         }
-        plugin.getEconomyProvider().withdraw(p.getUniqueId(), shop.price);
-        plugin.getEconomyProvider().deposit(shop.owner, shop.price);
+        if (!plugin.getEconomyProvider().withdraw(p.getUniqueId(), shop.price)) {
+            plugin.getLangManager().send(p, "playershop.payment-failed");
+            return;
+        }
+        if (!plugin.getEconomyProvider().deposit(shop.owner, shop.price)) {
+            plugin.getEconomyProvider().deposit(p.getUniqueId(), shop.price);
+            plugin.getLangManager().send(p, "playershop.payment-failed");
+            return;
+        }
 
         p.getInventory().addItem(bought);
 
@@ -107,6 +118,10 @@ public final class PlayerShopListener implements Listener {
         }
         plugin.getPlayerShopManager().removeShop(block.getLocation());
         plugin.getLangManager().send(event.getPlayer(), "playershop.removed");
+    }
+
+    private boolean isValidPrice(double price) {
+        return price > 0.0 && !Double.isNaN(price) && !Double.isInfinite(price);
     }
 
 }

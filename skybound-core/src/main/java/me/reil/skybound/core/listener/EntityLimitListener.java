@@ -47,7 +47,7 @@ public final class EntityLimitListener implements Listener {
         Location center = island.getCenter();
         if (center.getWorld() == null) return 0;
 
-        for (Entity entity : center.getWorld().getEntities()) {
+        for (Entity entity : center.getWorld().getNearbyEntities(center, island.getRadius(), center.getWorld().getMaxHeight(), island.getRadius())) {
             if (entity instanceof Player) continue;
             if (!(entity instanceof LivingEntity)) continue;
             if (island.isWithinBounds(entity.getLocation())) {

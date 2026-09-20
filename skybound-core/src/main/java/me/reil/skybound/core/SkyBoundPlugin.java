@@ -122,6 +122,7 @@ public final class SkyBoundPlugin extends JavaPlugin {
     private int valueRecalculationCursor;
     private long nextValueRecalculationAt;
     private java.util.List<Island> valueRecalculationBatch;
+    private boolean valueRecalculationRunning;
 
     @Override
     public void onEnable() {
@@ -161,10 +162,10 @@ public final class SkyBoundPlugin extends JavaPlugin {
         this.islandLogManager = new IslandLogManager();
         this.islandChestManager = new IslandChestManager(this);
         this.confirmationManager = new ConfirmationManager();
-        this.biomeService = new BiomeService();
+        this.biomeService = new BiomeService(this);
         this.prestigeManager = new PrestigeManager(this, coreConfig, islandManager);
         this.offlineGeneratorManager = new OfflineGeneratorManager(this, islandManager, generatorManager);
-        this.islandPermissionManager = new IslandPermissionManager();
+        this.islandPermissionManager = new IslandPermissionManager(this);
 
         // Season system
         this.seasonConfig = new SeasonConfig(this);
@@ -358,14 +359,14 @@ public final class SkyBoundPlugin extends JavaPlugin {
     }
 
     private void registerListeners() {
-        Bukkit.getPluginManager().registerEvents(new IslandProtectionListener(islandManager, teamManager), this);
+        Bukkit.getPluginManager().registerEvents(new IslandProtectionListener(islandManager, teamManager, islandPermissionManager), this);
         Bukkit.getPluginManager().registerEvents(new GeneratorListener(islandManager, generatorManager, boosterManager), this);
         Bukkit.getPluginManager().registerEvents(new MissionTrackingListener(islandManager, missionManager), this);
         Bukkit.getPluginManager().registerEvents(new PlayerJoinListener(this, islandManager), this);
         Bukkit.getPluginManager().registerEvents(new MenuListener(), this);
         Bukkit.getPluginManager().registerEvents(new VoidFallListener(islandManager, coreConfig), this);
         Bukkit.getPluginManager().registerEvents(new PortalListener(islandManager, coreConfig), this);
-        Bukkit.getPluginManager().registerEvents(new IslandFlyListener(islandManager, boosterManager, coreConfig), this);
+        Bukkit.getPluginManager().registerEvents(new IslandFlyListener(islandManager, boosterManager, coreConfig, islandPermissionManager), this);
         Bukkit.getPluginManager().registerEvents(new EntityLimitListener(islandManager, upgradeManager), this);
 
         this.autosellListener = new AutosellListener(shopManager, economyProvider);
@@ -437,6 +438,9 @@ public final class SkyBoundPlugin extends JavaPlugin {
                     valueRecalculationCursor = 0;
                     nextValueRecalculationAt = now + 300000L;
                 }
+                if (valueRecalculationRunning) {
+                    return;
+                }
 
                 if (valueRecalculationBatch.isEmpty()) {
                     valueRecalculationBatch = null;
@@ -453,7 +457,18 @@ public final class SkyBoundPlugin extends JavaPlugin {
 
                 Island island = valueRecalculationBatch.get(valueRecalculationCursor);
                 valueRecalculationCursor++;
-                islandManager.recalculateValue((me.reil.skybound.core.island.IslandImpl) island);
+                if (island instanceof me.reil.skybound.core.island.IslandImpl) {
+                    valueRecalculationRunning = true;
+                    boolean started = islandManager.recalculateValueBatched((me.reil.skybound.core.island.IslandImpl) island, new Runnable() {
+                        @Override
+                        public void run() {
+                            valueRecalculationRunning = false;
+                        }
+                    });
+                    if (!started) {
+                        valueRecalculationRunning = false;
+                    }
+                }
             }
         }, 6000L, 20L);
     }

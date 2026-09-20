@@ -31,16 +31,6 @@
             <artifactId>VaultAPI</artifactId>
         </dependency>
         <dependency>
-            <groupId>net.enelson.sopli.lib</groupId>
-            <artifactId>soplib-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.bstats</groupId>
-                    <artifactId>bstats-bukkit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
             <version>2.12.2</version>
@@ -61,6 +51,7 @@
     </dependencies>
 
     <build>
+        <finalName>SkyBound-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

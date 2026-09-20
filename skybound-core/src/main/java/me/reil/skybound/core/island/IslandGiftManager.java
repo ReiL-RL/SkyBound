@@ -8,6 +8,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -193,7 +195,9 @@ public final class IslandGiftManager {
                         q.add(new Gift(sId, sName, item, ts));
                     }
                     if (!q.isEmpty()) pending.put(rec, q);
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Ignoring invalid pending gift queue for recipient '" + key + "': " + e.getMessage());
+                }
             }
         }
 
@@ -202,9 +206,11 @@ public final class IslandGiftManager {
             for (String key : counters.getKeys(false)) {
                 try {
                     UUID id = UUID.fromString(key);
-                    sentToday.put(id, counters.getInt(key + ".sent"));
+                    sentToday.put(id, Math.max(0, counters.getInt(key + ".sent")));
                     dayIndex.put(id, counters.getInt(key + ".day"));
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Ignoring invalid gift counter for sender '" + key + "': " + e.getMessage());
+                }
             }
         }
     }
@@ -227,18 +233,12 @@ public final class IslandGiftManager {
             cfg.set("counters." + e.getKey() + ".sent", e.getValue());
             cfg.set("counters." + e.getKey() + ".day", dayIndex.getOrDefault(e.getKey(), currentDayIndex()));
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save gifts.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "gifts.yml");
     }
 
     private static String serializeItem(ItemStack item) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+             ObjectOutputStream oos = new BukkitObjectOutputStream(bos)) {
             oos.writeObject(item);
             oos.flush();
             return Base64.getEncoder().encodeToString(bos.toByteArray());
@@ -250,7 +250,7 @@ public final class IslandGiftManager {
     private static ItemStack deserializeItem(String data) {
         if (data == null || data.isEmpty()) return null;
         try (ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getDecoder().decode(data));
-             ObjectInputStream ois = new ObjectInputStream(bis)) {
+             ObjectInputStream ois = new BukkitObjectInputStream(bis)) {
             Object o = ois.readObject();
             return o instanceof ItemStack ? (ItemStack) o : null;
         } catch (Exception e) {

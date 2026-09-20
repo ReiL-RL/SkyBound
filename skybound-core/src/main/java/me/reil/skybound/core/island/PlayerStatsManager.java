@@ -6,7 +6,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -124,11 +123,15 @@ public final class PlayerStatsManager {
                 for (String statKey : inner.getKeys(false)) {
                     try {
                         Stat s = Stat.valueOf(statKey);
-                        m.put(s, inner.getLong(statKey));
-                    } catch (IllegalArgumentException ignored) {}
+                        m.put(s, Math.max(0L, inner.getLong(statKey)));
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Ignoring unknown player stat '" + statKey + "' for " + key + ".");
+                    }
                 }
                 stats.put(id, m);
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                plugin.getLogger().warning("Ignoring invalid player stats entry '" + key + "': " + e.getMessage());
+            }
         }
     }
 
@@ -140,12 +143,6 @@ public final class PlayerStatsManager {
                 cfg.set("stats." + e.getKey() + "." + s.getKey().name(), s.getValue());
             }
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save player-stats.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "player-stats.yml");
     }
 }

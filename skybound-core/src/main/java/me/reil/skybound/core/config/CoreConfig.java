@@ -32,10 +32,16 @@ public final class CoreConfig {
     // Economy
     private String currencyName;
     private String currencyNamePlural;
+    private double shopBuyMultiplier;
+    private double shopSellMultiplier;
+    private double missionMoneyMultiplier;
+    private double missionXpMultiplier;
 
     // Island
     private int maxTeamSize;
     private int maxWarps;
+    private double baseBankLimit;
+    private int baseEntityLimit;
     private boolean islandLockDefault;
 
     // Generator
@@ -93,10 +99,20 @@ public final class CoreConfig {
         // Economy
         this.currencyName = config.getString("economy.currency-name", "coin");
         this.currencyNamePlural = config.getString("economy.currency-name-plural", "coins");
+        this.shopBuyMultiplier = sanitizePositiveMultiplier(config.getDouble("economy.shop.buy-multiplier", 1.0), 1.0);
+        this.shopSellMultiplier = sanitizePositiveMultiplier(config.getDouble("economy.shop.sell-multiplier", 1.0), 1.0);
+        this.missionMoneyMultiplier = sanitizePositiveMultiplier(config.getDouble("economy.missions.money-multiplier", 1.0), 1.0);
+        this.missionXpMultiplier = sanitizePositiveMultiplier(config.getDouble("economy.missions.island-xp-multiplier", 1.0), 1.0);
 
         // Island
         this.maxTeamSize = config.getInt("island.max-team-size", 4);
         this.maxWarps = config.getInt("island.max-warps", 3);
+        this.baseBankLimit = config.getDouble("island.base-bank-limit", 1000000.0);
+        if (Double.isNaN(this.baseBankLimit) || Double.isInfinite(this.baseBankLimit) || this.baseBankLimit < 0.0) {
+            this.baseBankLimit = 1000000.0;
+        }
+        this.baseEntityLimit = config.getInt("island.base-entity-limit", 50);
+        if (this.baseEntityLimit < 1) this.baseEntityLimit = 50;
         this.islandLockDefault = config.getBoolean("island.lock-default", false);
 
         // Generator
@@ -157,8 +173,14 @@ public final class CoreConfig {
     public long getAutosaveSeconds() { return autosaveSeconds; }
     public String getCurrencyName() { return currencyName; }
     public String getCurrencyNamePlural() { return currencyNamePlural; }
+    public double getShopBuyMultiplier() { return shopBuyMultiplier; }
+    public double getShopSellMultiplier() { return shopSellMultiplier; }
+    public double getMissionMoneyMultiplier() { return missionMoneyMultiplier; }
+    public double getMissionXpMultiplier() { return missionXpMultiplier; }
     public int getMaxTeamSize() { return maxTeamSize; }
     public int getMaxWarps() { return maxWarps; }
+    public double getBaseBankLimit() { return baseBankLimit; }
+    public int getBaseEntityLimit() { return baseEntityLimit; }
     public boolean isIslandLockDefault() { return islandLockDefault; }
     public boolean isGeneratorEnabled() { return generatorEnabled; }
     public String getStorageMode() { return storageMode; }
@@ -175,4 +197,11 @@ public final class CoreConfig {
     public long getPrestigeCostXp() { return prestigeCostXp; }
     public int getPrestigeTokensPerPrestige() { return prestigeTokensPerPrestige; }
     public boolean isPrestigeMenuInUpgrades() { return prestigeMenuInUpgrades; }
+
+    private double sanitizePositiveMultiplier(double value, double fallback) {
+        if (Double.isNaN(value) || Double.isInfinite(value) || value < 0.0) {
+            return fallback;
+        }
+        return value;
+    }
 }

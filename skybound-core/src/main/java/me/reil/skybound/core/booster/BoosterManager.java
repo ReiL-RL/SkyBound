@@ -61,8 +61,10 @@ public final class BoosterManager implements BoosterProvider {
     public boolean purchase(Player buyer, Island island, String boosterId) {
         BoosterImpl booster = boosters.get(boosterId);
         if (booster == null || island == null) return false;
+        if (!isValidMoney(booster.getCost()) || booster.getDurationSeconds() <= 0 || !isValidMultiplier(booster.getMultiplier())) return false;
+        if (isActive(island, boosterId)) return false;
 
-        if (!bankManager.withdrawInternal(island, booster.getCost())) return false;
+        if (booster.getCost() > 0.0 && !bankManager.withdrawInternal(island, booster.getCost())) return false;
 
         long now = System.currentTimeMillis();
         ActiveBoosterImpl active = new ActiveBoosterImpl(boosterId, now, now + (booster.getDurationSeconds() * 1000L), booster.getMultiplier());
@@ -73,6 +75,7 @@ public final class BoosterManager implements BoosterProvider {
             activeBoosters.put(island.getId(), list);
         }
         list.add(active);
+        savePersistentState();
 
         // Log to island journal
         try {
@@ -91,7 +94,7 @@ public final class BoosterManager implements BoosterProvider {
     public boolean forceActivate(Island island, String boosterId) {
         BoosterImpl booster = boosters.get(boosterId);
         if (booster == null || island == null) {
-            ((org.bukkit.plugin.java.JavaPlugin) org.bukkit.Bukkit.getPluginManager().getPlugin("SkyBound")).getLogger().warning("forceActivate failed: booster=" + boosterId + " found=" + (booster != null) + " island=" + (island != null) + " available=" + boosters.keySet());
+            plugin.getLogger().warning("forceActivate failed: booster=" + boosterId + " found=" + (booster != null) + " island=" + (island != null) + " available=" + boosters.keySet());
             return false;
         }
 
@@ -104,6 +107,7 @@ public final class BoosterManager implements BoosterProvider {
             activeBoosters.put(island.getId(), list);
         }
         list.add(active);
+        savePersistentState();
         return true;
     }
 
@@ -168,6 +172,13 @@ public final class BoosterManager implements BoosterProvider {
         activeBoosters.putAll(data);
     }
 
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        if (activeBoosters.remove(islandId) != null) {
+            savePersistentState();
+        }
+    }
+
     public void tick() {
         long now = System.currentTimeMillis();
         for (List<ActiveBoosterImpl> list : activeBoosters.values()) {
@@ -202,6 +213,9 @@ public final class BoosterManager implements BoosterProvider {
             int duration = bs.getInt("duration-seconds", 600);
             double cost = bs.getDouble("cost", 5000.0);
             double multiplier = bs.getDouble("multiplier", 2.0);
+            if (duration <= 0) duration = 600;
+            if (!isValidMoney(cost)) cost = 5000.0;
+            if (!isValidMultiplier(multiplier)) multiplier = 1.0;
 
             boosters.put(boosterId, new BoosterImpl(boosterId, displayName, description, duration, cost, multiplier, type, icon));
         }
@@ -214,6 +228,21 @@ public final class BoosterManager implements BoosterProvider {
             return BoosterType.valueOf(str.toUpperCase());
         } catch (IllegalArgumentException e) {
             return BoosterType.CUSTOM;
+        }
+    }
+
+    private boolean isValidMoney(double amount) {
+        return amount >= 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount);
+    }
+
+    private boolean isValidMultiplier(double multiplier) {
+        return multiplier > 0.0 && !Double.isNaN(multiplier) && !Double.isInfinite(multiplier);
+    }
+
+    private void savePersistentState() {
+        islandManager.saveData();
+        if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+            ((me.reil.skybound.core.SkyBoundPlugin) plugin).getStorageManager().saveBoosters(activeBoosters);
         }
     }
 }

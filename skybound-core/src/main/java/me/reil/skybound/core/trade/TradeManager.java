@@ -7,14 +7,12 @@ import me.reil.skybound.api.trade.TradeProvider;
 import me.reil.skybound.core.island.IslandManager;
 import me.reil.skybound.core.util.InventoryUtil;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,7 +33,9 @@ public final class TradeManager implements TradeProvider {
         OWN_OFFER,
         NO_MONEY,
         NO_SPACE,
-        NOT_SELLER
+        NOT_SELLER,
+        PAYMENT_FAILED,
+        NO_ITEMS
     }
 
     private final JavaPlugin plugin;
@@ -56,15 +56,16 @@ public final class TradeManager implements TradeProvider {
         Island island = islandManager.getPlayerIsland(seller.getUniqueId());
         if (island == null) return null;
         if (offering == null || offering.getAmount() <= 0) return null;
-        if (price <= 0) return null;
+        if (!isValidAmount(price)) return null;
+
+        ItemStack storedOffering = offering.clone();
+        Map<Integer, ItemStack> notRemoved = seller.getInventory().removeItem(storedOffering.clone());
+        if (!notRemoved.isEmpty()) return null;
 
         String id = "trade_" + (nextId++);
         TradeOfferImpl offer = new TradeOfferImpl(id, seller.getUniqueId(), island.getId(),
-                offering.clone(), price, System.currentTimeMillis());
+                storedOffering, price, System.currentTimeMillis());
         offers.put(id, offer);
-
-        // Remove item from seller's inventory
-        seller.getInventory().removeItem(offering.clone());
         saveOffers();
         return offer;
     }
@@ -78,20 +79,26 @@ public final class TradeManager implements TradeProvider {
         TradeOfferImpl offer = offers.get(offerId);
         if (offer == null || !offer.isActive()) return TransactionResult.OFFER_NOT_FOUND;
         if (offer.getSeller().equals(buyer.getUniqueId())) return TransactionResult.OWN_OFFER;
+        if (!isValidAmount(offer.getPrice())) return TransactionResult.OFFER_NOT_FOUND;
 
-        // Check buyer has enough money
-        double balance = economy.getBalance(buyer.getUniqueId());
-        if (balance < offer.getPrice()) return TransactionResult.NO_MONEY;
+        if (!economy.has(buyer.getUniqueId(), offer.getPrice())) return TransactionResult.NO_MONEY;
         if (!InventoryUtil.canFit(buyer.getInventory(), offer.getOffering())) return TransactionResult.NO_SPACE;
 
-        // Transfer money
-        economy.withdraw(buyer.getUniqueId(), offer.getPrice());
-        economy.deposit(offer.getSeller(), offer.getPrice());
+        if (!economy.withdraw(buyer.getUniqueId(), offer.getPrice())) {
+            return TransactionResult.PAYMENT_FAILED;
+        }
+        if (!economy.deposit(offer.getSeller(), offer.getPrice())) {
+            economy.deposit(buyer.getUniqueId(), offer.getPrice());
+            return TransactionResult.PAYMENT_FAILED;
+        }
 
-        // Give item to buyer
-        buyer.getInventory().addItem(offer.getOffering());
+        Map<Integer, ItemStack> leftovers = buyer.getInventory().addItem(offer.getOffering().clone());
+        if (!leftovers.isEmpty()) {
+            for (ItemStack leftover : leftovers.values()) {
+                buyer.getWorld().dropItemNaturally(buyer.getLocation(), leftover);
+            }
+        }
 
-        // Deactivate offer
         offer.setActive(false);
         saveOffers();
         return TransactionResult.SUCCESS;
@@ -108,8 +115,7 @@ public final class TradeManager implements TradeProvider {
         if (!offer.getSeller().equals(seller.getUniqueId())) return TransactionResult.NOT_SELLER;
         if (!InventoryUtil.canFit(seller.getInventory(), offer.getOffering())) return TransactionResult.NO_SPACE;
 
-        // Return item to seller
-        seller.getInventory().addItem(offer.getOffering());
+        seller.getInventory().addItem(offer.getOffering().clone());
         offer.setActive(false);
         saveOffers();
         return TransactionResult.SUCCESS;
@@ -144,7 +150,7 @@ public final class TradeManager implements TradeProvider {
 
     public void saveOffers() {
         File file = new File(plugin.getDataFolder(), "trades.yml");
-        FileConfiguration cfg = new YamlConfiguration();
+        YamlConfiguration cfg = new YamlConfiguration();
 
         cfg.set("next-id", nextId);
 
@@ -159,18 +165,14 @@ public final class TradeManager implements TradeProvider {
             cfg.set(path + ".timestamp", offer.getTimestamp());
         }
 
-        try {
-            cfg.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save trades: " + e.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, file, "trades.yml");
     }
 
     private void loadOffers() {
         File file = new File(plugin.getDataFolder(), "trades.yml");
         if (!file.exists()) return;
 
-        FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
         this.nextId = cfg.getInt("next-id", 1);
 
         ConfigurationSection offersSection = cfg.getConfigurationSection("offers");
@@ -199,6 +201,10 @@ public final class TradeManager implements TradeProvider {
         }
 
         plugin.getLogger().info("Loaded " + offers.size() + " trade offers.");
+    }
+
+    private boolean isValidAmount(double amount) {
+        return amount > 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount);
     }
 
 }

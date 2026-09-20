@@ -2,6 +2,29 @@
 # Supports shaped and shapeless recipes.
 # Use material names from Bukkit Material enum.
 # For custom items (future): use sop:item_id syntax.
+#
+# Этот файл регистрирует кастомные крафты при запуске плагина.
+#
+# Общая структура:
+# recipes:
+#   recipe_id:
+#     type: shaped | shapeless
+#     ...
+#
+# shaped-рецепт:
+#   shape       — 1-3 строки по 1-3 символа. Пробел означает пустую ячейку.
+#   ingredients — карта символ -> Bukkit Material.
+#
+# shapeless-рецепт:
+#   ingredients — список Bukkit Material. Порядок в верстаке не важен.
+#
+# result:
+#   material — Bukkit Material результата.
+#   name     — кастомное имя результата, поддерживает & цвета.
+#   amount   — количество результата. Автоматически clamp-ится к max stack size.
+#   lore     — описание предмета.
+#
+# Некорректные материалы/формы пропускаются с warning в консоль.
 
 recipes:
   island_key:

@@ -73,13 +73,16 @@ public final class UpgradeManager implements UpgradeProvider {
 
         int nextLevel = currentLevel + 1;
         double cost = upgrade.getCost(nextLevel);
+        if (!isValidMoney(cost)) return false;
 
-        if (!bankManager.withdrawInternal(island, cost)) return false;
+        if (cost > 0.0 && !bankManager.withdrawInternal(island, cost)) return false;
 
         IslandUpgradeEvent event = new IslandUpgradeEvent(buyer, island, upgradeId, nextLevel, cost);
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled()) {
-            island.setBankBalance(island.getBankBalance() + cost);
+            if (cost > 0.0) {
+                bankManager.depositInternal(island, cost);
+            }
             return false;
         }
 
@@ -91,6 +94,7 @@ public final class UpgradeManager implements UpgradeProvider {
         levels.put(upgradeId, nextLevel);
 
         applyUpgrade(island, upgradeId, nextLevel);
+        savePersistentState();
 
         // Log to island journal
         try {
@@ -109,7 +113,7 @@ public final class UpgradeManager implements UpgradeProvider {
     public boolean forceUpgrade(Island island, String upgradeId) {
         UpgradeImpl upgrade = upgrades.get(upgradeId);
         if (upgrade == null || island == null) {
-            ((org.bukkit.plugin.java.JavaPlugin) org.bukkit.Bukkit.getPluginManager().getPlugin("SkyBound")).getLogger().warning("forceUpgrade failed: upgrade=" + upgradeId + " found=" + (upgrade != null) + " island=" + (island != null) + " available=" + upgrades.keySet());
+            plugin.getLogger().warning("forceUpgrade failed: upgrade=" + upgradeId + " found=" + (upgrade != null) + " island=" + (island != null) + " available=" + upgrades.keySet());
             return false;
         }
 
@@ -126,6 +130,7 @@ public final class UpgradeManager implements UpgradeProvider {
         levels.put(upgradeId, nextLevel);
 
         applyUpgrade(island, upgradeId, nextLevel);
+        savePersistentState();
         return true;
     }
 
@@ -161,12 +166,19 @@ public final class UpgradeManager implements UpgradeProvider {
         islandUpgrades.putAll(data);
     }
 
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+        if (islandUpgrades.remove(islandId) != null) {
+            savePersistentState();
+        }
+    }
+
     /**
      * Get the entity limit for an island (base + upgrade).
      */
     public int getEntityLimit(Island island) {
         double upgradeValue = getEffectiveValue(island, "entity_limit");
-        return 50 + (int) upgradeValue; // base 50
+        return config.getBaseEntityLimit() + (int) upgradeValue;
     }
 
     /**
@@ -219,6 +231,12 @@ public final class UpgradeManager implements UpgradeProvider {
                 if (ls != null) {
                     costs[idx] = ls.getDouble("cost", 0.0);
                     values[idx] = ls.getDouble("value", 0.0);
+                    if (!isValidMoney(costs[idx])) {
+                        costs[idx] = 0.0;
+                    }
+                    if (Double.isNaN(values[idx]) || Double.isInfinite(values[idx])) {
+                        values[idx] = 0.0;
+                    }
                 }
                 idx++;
             }
@@ -234,6 +252,17 @@ public final class UpgradeManager implements UpgradeProvider {
             return UpgradeType.valueOf(str.toUpperCase());
         } catch (IllegalArgumentException e) {
             return UpgradeType.CUSTOM;
+        }
+    }
+
+    private boolean isValidMoney(double amount) {
+        return amount >= 0.0 && !Double.isNaN(amount) && !Double.isInfinite(amount);
+    }
+
+    private void savePersistentState() {
+        islandManager.saveData();
+        if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+            ((me.reil.skybound.core.SkyBoundPlugin) plugin).getStorageManager().saveUpgrades(islandUpgrades);
         }
     }
 }

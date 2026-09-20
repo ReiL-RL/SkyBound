@@ -6,18 +6,17 @@ import me.reil.skybound.api.season.Season;
 import me.reil.skybound.api.season.SeasonProvider;
 import me.reil.skybound.api.season.SeasonReward;
 import me.reil.skybound.core.SkyBoundPlugin;
+import me.reil.skybound.core.island.IslandImpl;
 import me.reil.skybound.core.island.IslandManager;
 import me.reil.skybound.core.leaderboard.LeaderboardManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +79,7 @@ public final class SeasonManager implements SeasonProvider {
         leaderboardManager.recalculate();
 
         // Give rewards to top islands
-        List<LeaderboardEntry> top = leaderboardManager.getTopByValue(config.getRewards().size());
+        List<LeaderboardEntry> top = leaderboardManager.getTopByValue(getMaxRewardRank());
         for (Map.Entry<Integer, List<String>> entry : config.getRewards().entrySet()) {
             int rank = entry.getKey();
             if (rank > top.size()) continue;
@@ -90,7 +89,12 @@ public final class SeasonManager implements SeasonProvider {
             String playerName = owner.getName() != null ? owner.getName() : "Unknown";
 
             for (String cmd : entry.getValue()) {
-                String resolved = cmd.replace("{player}", playerName);
+                String resolved = cmd
+                        .replace("{player}", playerName)
+                        .replace("{rank}", String.valueOf(rank))
+                        .replace("{island}", leaderEntry.getIslandName())
+                        .replace("{value}", String.format("%.0f", leaderEntry.getValue()))
+                        .replace("{season}", String.valueOf(currentSeason.getNumber()));
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
             }
         }
@@ -111,10 +115,7 @@ public final class SeasonManager implements SeasonProvider {
 
         // Auto-reset islands if configured
         if (config.isAutoResetIslands()) {
-            for (Island island : islandManager.getAllIslands()) {
-                islandManager.regenerateIsland(island.getId(), "default");
-            }
-            plugin.getLogger().info("All islands reset for new season.");
+            resetIslandsForNewSeason(new ArrayList<Island>(islandManager.getAllIslands()));
         }
 
         // Start new season
@@ -125,9 +126,58 @@ public final class SeasonManager implements SeasonProvider {
         plugin.getLogger().info("Season " + nextNumber + " started.");
     }
 
+    private void resetIslandsForNewSeason(final List<Island> islands) {
+        if (!(plugin instanceof SkyBoundPlugin)) {
+            plugin.getLogger().warning("Cannot paste season reset schematics: plugin instance is not SkyBoundPlugin.");
+            return;
+        }
+        resetNextIsland(islands, 0);
+    }
+
+    private void resetNextIsland(final List<Island> islands, final int index) {
+        if (index >= islands.size()) {
+            plugin.getLogger().info("All islands reset for new season.");
+            return;
+        }
+
+        final Island island = islands.get(index);
+        final String schematicName = getSeasonResetSchematic(island);
+        boolean started = islandManager.regenerateIslandBatched(island.getId(), schematicName, new Runnable() {
+            @Override
+            public void run() {
+                ((SkyBoundPlugin) plugin).getSchematicService().paste(schematicName, island.getCenter());
+                resetNextIsland(islands, index + 1);
+            }
+        });
+
+        if (!started) {
+            resetNextIsland(islands, index + 1);
+        }
+    }
+
+    private String getSeasonResetSchematic(Island island) {
+        if (island instanceof IslandImpl) {
+            String saved = ((IslandImpl) island).getSchematicName();
+            if (saved != null && !saved.isEmpty()) {
+                return saved;
+            }
+        }
+        return "desert.schem";
+    }
+
     @Override
     public boolean isEnabled() {
         return config.isEnabled();
+    }
+
+    private int getMaxRewardRank() {
+        int max = 0;
+        for (Integer rank : config.getRewards().keySet()) {
+            if (rank != null && rank > max) {
+                max = rank;
+            }
+        }
+        return max;
     }
 
     public void shutdown() {
@@ -158,7 +208,7 @@ public final class SeasonManager implements SeasonProvider {
             return;
         }
 
-        FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
         int number = cfg.getInt("current-season.number", 1);
         long startTime = cfg.getLong("current-season.start-time", System.currentTimeMillis());
         currentSeason = new SeasonImpl(number, startTime, config.getDurationDays());
@@ -167,14 +217,10 @@ public final class SeasonManager implements SeasonProvider {
     private void saveCurrentSeason() {
         if (currentSeason == null) return;
         File file = new File(plugin.getDataFolder(), "season-data.yml");
-        FileConfiguration cfg = new YamlConfiguration();
+        YamlConfiguration cfg = new YamlConfiguration();
         cfg.set("current-season.number", currentSeason.getNumber());
         cfg.set("current-season.start-time", currentSeason.getStartTime());
-        try {
-            cfg.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save season data: " + e.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, file, "season-data.yml");
     }
 
     private void broadcastLang(String key, String... replacements) {

@@ -1,11 +1,16 @@
 package me.reil.skybound.core.command.island;
 
+import me.reil.skybound.api.event.IslandRegenEvent;
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.island.IslandImpl;
 import me.reil.skybound.core.menu.IslandCreateMenu;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public final class IslandLifecycleCommandHandler implements IslandSubCommandHandler {
 
@@ -13,6 +18,7 @@ public final class IslandLifecycleCommandHandler implements IslandSubCommandHand
 
     private final SkyBoundPlugin plugin;
     private final IslandCommandContext context;
+    private final Set<String> regeneratingIslands = new HashSet<String>();
 
     public IslandLifecycleCommandHandler(IslandCommandContext context) {
         this.context = context;
@@ -72,6 +78,10 @@ public final class IslandLifecycleCommandHandler implements IslandSubCommandHand
             context.lang().send(player, "island.owner-only");
             return;
         }
+        if (regeneratingIslands.contains(island.getId())) {
+            context.lang().send(player, "island.regen-in-progress");
+            return;
+        }
 
         boolean needsConfirmation = plugin.getConfirmationManager()
                 .requestConfirmation(player.getUniqueId(), "delete");
@@ -85,16 +95,28 @@ public final class IslandLifecycleCommandHandler implements IslandSubCommandHand
             return;
         }
         plugin.getIslandChestManager().removeChest(island.getId());
-        context.lang().send(player, "island.deleted");
+        plugin.getPlayerShopManager().removeIslandShops(island.getId());
+        plugin.getIslandBorderManager().removeIsland(island.getId());
+        plugin.getIslandReviewManager().removeIsland(island.getId());
+        plugin.getIslandAllianceManager().removeIsland(island.getId());
+        plugin.getIslandPermissionManager().removeIsland(island.getId());
+        plugin.getUpgradeManager().removeIsland(island.getId());
+        plugin.getBoosterManager().removeIsland(island.getId());
+        plugin.getPrestigeManager().removeIsland(island.getId());
+        plugin.getPrestigeShopManager().removeIsland(island.getId());
     }
 
     private void regenerate(Player player, String[] args) {
-        Island island = context.requireIsland(player);
+        final Island island = context.requireIsland(player);
         if (island == null) {
             return;
         }
         if (!island.getOwner().equals(player.getUniqueId())) {
             context.lang().send(player, "island.owner-only");
+            return;
+        }
+        if (regeneratingIslands.contains(island.getId())) {
+            context.lang().send(player, "island.regen-in-progress");
             return;
         }
 
@@ -105,15 +127,52 @@ public final class IslandLifecycleCommandHandler implements IslandSubCommandHand
             return;
         }
 
-        String schematicName = args.length > 1 ? args[1] : getSavedSchematicName(island);
-        String fileName = normalizeSchematicName(schematicName);
-        if (!plugin.getIslandManager().regenerateIsland(island.getId(), fileName)) {
+        IslandRegenEvent event = new IslandRegenEvent(player, island);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
             context.lang().send(player, "island.regen-failed");
             return;
         }
-        plugin.getSchematicService().paste(fileName, island.getCenter());
-        setSafeHomeAndTeleport(player, island);
-        context.lang().send(player, "island.regenerated");
+
+        String schematicName = args.length > 1 ? args[1] : getSavedSchematicName(island);
+        final String fileName = normalizeSchematicName(schematicName);
+        regeneratingIslands.add(island.getId());
+        teleportPlayersOutOfIsland(island);
+        boolean started = plugin.getIslandManager().regenerateIslandBatched(island.getId(), fileName, new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Island current = plugin.getIslandManager().getIsland(island.getId());
+                    if (current == null) {
+                        return;
+                    }
+                    plugin.getSchematicService().paste(fileName, current.getCenter());
+                    setSafeHome(current);
+                    Island playerIsland = plugin.getIslandManager().getPlayerIsland(player.getUniqueId());
+                    if (player.isOnline() && playerIsland != null && playerIsland.getId().equals(current.getId())) {
+                        player.teleport(current.getHome());
+                        context.lang().send(player, "island.regenerated");
+                    }
+                } finally {
+                    regeneratingIslands.remove(island.getId());
+                }
+            }
+        });
+        if (!started) {
+            regeneratingIslands.remove(island.getId());
+            context.lang().send(player, "island.regen-failed");
+            return;
+        }
+        context.lang().send(player, "island.regen-started");
+    }
+
+    private void teleportPlayersOutOfIsland(Island island) {
+        Location spawn = Bukkit.getWorlds().get(0).getSpawnLocation();
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (island.isWithinBounds(online.getLocation())) {
+                online.teleport(spawn);
+            }
+        }
     }
 
     private String getSavedSchematicName(Island island) {
@@ -134,11 +193,16 @@ public final class IslandLifecycleCommandHandler implements IslandSubCommandHand
     }
 
     private void setSafeHomeAndTeleport(Player player, Island island) {
+        setSafeHome(island);
+        player.teleport(island.getHome());
+    }
+
+    private void setSafeHome(Island island) {
         Location home = island.getCenter().clone();
         home.setY(home.getWorld().getHighestBlockYAt(home.getBlockX(), home.getBlockZ()) + 1);
         home.setX(home.getBlockX() + 0.5);
         home.setZ(home.getBlockZ() + 0.5);
         island.setHome(home);
-        player.teleport(island.getHome());
+        plugin.getIslandManager().saveData();
     }
 }

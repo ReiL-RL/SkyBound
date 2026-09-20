@@ -1,8 +1,10 @@
 package me.reil.skybound.core.listener;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.IslandPermission;
 import me.reil.skybound.api.island.IslandRole;
 import me.reil.skybound.core.island.IslandManager;
+import me.reil.skybound.core.island.IslandPermissionManager;
 import me.reil.skybound.core.team.TeamManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -31,36 +33,39 @@ public final class IslandProtectionListener implements Listener {
 
     private final IslandManager islandManager;
     private final TeamManager teamManager;
+    private final IslandPermissionManager permissionManager;
 
-    public IslandProtectionListener(IslandManager islandManager, TeamManager teamManager) {
+    public IslandProtectionListener(IslandManager islandManager, TeamManager teamManager,
+                                    IslandPermissionManager permissionManager) {
         this.islandManager = islandManager;
         this.teamManager = teamManager;
+        this.permissionManager = permissionManager;
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        if (!canBuild(event.getPlayer(), event.getBlock().getLocation())) {
+        if (!hasIslandPermission(event.getPlayer(), event.getBlock().getLocation(), IslandPermission.BLOCK_BREAK)) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (!canBuild(event.getPlayer(), event.getBlock().getLocation())) {
+        if (!hasIslandPermission(event.getPlayer(), event.getBlock().getLocation(), IslandPermission.BLOCK_PLACE)) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBucketEmpty(PlayerBucketEmptyEvent event) {
-        if (!canBuild(event.getPlayer(), event.getBlock().getLocation())) {
+        if (!hasIslandPermission(event.getPlayer(), event.getBlock().getLocation(), IslandPermission.BUCKET_USE)) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBucketFill(PlayerBucketFillEvent event) {
-        if (!canBuild(event.getPlayer(), event.getBlock().getLocation())) {
+        if (!hasIslandPermission(event.getPlayer(), event.getBlock().getLocation(), IslandPermission.BUCKET_USE)) {
             event.setCancelled(true);
         }
     }
@@ -73,8 +78,9 @@ public final class IslandProtectionListener implements Listener {
 
         Material type = block.getType();
         // Containers, doors, buttons, levers, trapdoors, gates, etc.
-        if (isInteractable(type)) {
-            if (!canInteract(event.getPlayer(), block.getLocation())) {
+        IslandPermission permission = getInteractPermission(type);
+        if (permission != null) {
+            if (!hasIslandPermission(event.getPlayer(), block.getLocation(), permission)) {
                 event.setCancelled(true);
             }
         }
@@ -83,7 +89,7 @@ public final class IslandProtectionListener implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onEntityInteract(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
-        if (!canInteract(event.getPlayer(), entity.getLocation())) {
+        if (!hasIslandPermission(event.getPlayer(), entity.getLocation(), IslandPermission.RIDE)) {
             event.setCancelled(true);
         }
     }
@@ -94,11 +100,15 @@ public final class IslandProtectionListener implements Listener {
         Player player = (Player) event.getDamager();
         Entity target = event.getEntity();
 
-        // Allow PvE against monsters anywhere
-        if (target instanceof Monster) return;
+        if (target instanceof Monster) {
+            if (!hasIslandPermission(player, target.getLocation(), IslandPermission.KILL_MONSTERS)) {
+                event.setCancelled(true);
+            }
+            return;
+        }
 
-        // Protect animals and other entities on islands
-        if (!canBuild(player, target.getLocation())) {
+        IslandPermission permission = target instanceof Animals ? IslandPermission.KILL_ANIMALS : IslandPermission.BLOCK_BREAK;
+        if (!hasIslandPermission(player, target.getLocation(), permission)) {
             event.setCancelled(true);
         }
     }
@@ -107,37 +117,40 @@ public final class IslandProtectionListener implements Listener {
     public void onHangingBreak(HangingBreakByEntityEvent event) {
         if (!(event.getRemover() instanceof Player)) return;
         Player player = (Player) event.getRemover();
-        if (!canBuild(player, event.getEntity().getLocation())) {
+        if (!hasIslandPermission(player, event.getEntity().getLocation(), IslandPermission.BLOCK_BREAK)) {
             event.setCancelled(true);
         }
     }
 
-    private boolean canBuild(Player player, Location location) {
+    private boolean hasIslandPermission(Player player, Location location, IslandPermission permission) {
         if (player.hasPermission("skybound.admin.bypass")) return true;
         Island island = islandManager.getIslandAt(location);
         if (island == null) return true; // Not on any island
-        IslandRole role = island.getMemberRole(player.getUniqueId());
-        return role.isAtLeast(IslandRole.MEMBER);
+        if (teamManager.isBanned(island, player.getUniqueId())) return false;
+        return permissionManager.hasPermission(island, player.getUniqueId(), permission);
     }
 
-    private boolean canInteract(Player player, Location location) {
-        if (player.hasPermission("skybound.admin.bypass")) return true;
-        Island island = islandManager.getIslandAt(location);
-        if (island == null) return true;
-        IslandRole role = island.getMemberRole(player.getUniqueId());
-        return role.isAtLeast(IslandRole.TRUSTED);
-    }
-
-    private boolean isInteractable(Material type) {
+    private IslandPermission getInteractPermission(Material type) {
         String name = type.name();
-        return name.contains("CHEST") || name.contains("FURNACE") || name.contains("HOPPER")
-                || name.contains("BARREL") || name.contains("SHULKER") || name.contains("DOOR")
-                || name.contains("GATE") || name.contains("TRAPDOOR") || name.contains("BUTTON")
-                || name.contains("LEVER") || name.contains("ANVIL") || name.contains("BREWING")
-                || name.contains("ENCHANTING") || name.contains("BEACON") || name.contains("DISPENSER")
+        if (name.contains("CHEST")) return IslandPermission.OPEN_CHEST;
+        if (name.contains("BARREL")) return IslandPermission.OPEN_BARREL;
+        if (name.contains("SHULKER")) return IslandPermission.OPEN_SHULKER;
+        if (name.contains("FURNACE")) return IslandPermission.OPEN_FURNACE;
+        if (name.contains("HOPPER")) return IslandPermission.OPEN_HOPPER;
+        if (name.contains("BREWING")) return IslandPermission.OPEN_BREWING;
+        if (name.contains("ANVIL")) return IslandPermission.OPEN_ANVIL;
+        if (name.contains("ENCHANTING")) return IslandPermission.OPEN_ENCHANTING;
+        if (name.contains("DOOR") || name.contains("GATE") || name.contains("TRAPDOOR")
+                || name.contains("BUTTON") || name.contains("LEVER") || name.contains("DISPENSER")
                 || name.contains("DROPPER") || name.contains("NOTE_BLOCK") || name.contains("JUKEBOX")
-                || name.contains("CAMPFIRE") || name.contains("BELL") || name.contains("GRINDSTONE")
+                || name.contains("BELL")) {
+            return IslandPermission.REDSTONE_INTERACT;
+        }
+        if (name.contains("BEACON") || name.contains("CAMPFIRE") || name.contains("GRINDSTONE")
                 || name.contains("STONECUTTER") || name.contains("LOOM") || name.contains("CARTOGRAPHY")
-                || name.contains("SMITHING") || name.contains("LECTERN") || name.contains("COMPOSTER");
+                || name.contains("SMITHING") || name.contains("LECTERN") || name.contains("COMPOSTER")) {
+            return IslandPermission.OPEN_CHEST;
+        }
+        return null;
     }
 }

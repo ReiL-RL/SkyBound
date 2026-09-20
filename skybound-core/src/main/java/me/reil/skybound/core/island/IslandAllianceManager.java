@@ -11,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -150,6 +149,42 @@ public final class IslandAllianceManager {
         return true;
     }
 
+    public void removeIsland(String islandId) {
+        if (islandId == null || islandId.isEmpty()) return;
+
+        boolean changed = pendingInvites.remove(islandId) != null;
+        for (Set<String> invites : pendingInvites.values()) {
+            changed = invites.removeIf(allianceId -> {
+                Alliance alliance = alliances.get(allianceId);
+                return alliance == null || alliance.islands.contains(islandId);
+            }) || changed;
+        }
+
+        Alliance alliance = getByIsland(islandId);
+        if (alliance != null) {
+            if (alliance.leaderIsland.equals(islandId)) {
+                for (String memberIslandId : new ArrayList<String>(alliance.islands)) {
+                    islandToAlliance.remove(memberIslandId);
+                }
+                alliances.remove(alliance.id);
+            } else {
+                alliance.islands.remove(islandId);
+                islandToAlliance.remove(islandId);
+                if (alliance.islands.isEmpty()) {
+                    alliances.remove(alliance.id);
+                }
+            }
+            changed = true;
+        } else {
+            changed = islandToAlliance.remove(islandId) != null || changed;
+        }
+
+        if (changed) {
+            pendingInvites.values().removeIf(Set::isEmpty);
+            save();
+        }
+    }
+
     public Set<String> getPendingInvites(String islandId) {
         Set<String> s = pendingInvites.get(islandId);
         return s == null ? new HashSet<String>() : new HashSet<String>(s);
@@ -237,13 +272,7 @@ public final class IslandAllianceManager {
             cfg.set(base + "created-at", alliance.createdAt);
             cfg.set(base + "islands", new ArrayList<String>(alliance.islands));
         }
-        try {
-            File parent = dataFile.getParentFile();
-            if (parent != null && !parent.exists()) parent.mkdirs();
-            cfg.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("Failed to save alliances.yml: " + ex.getMessage());
-        }
+        me.reil.skybound.core.storage.YamlFiles.saveAtomically(plugin, cfg, dataFile, "alliances.yml");
     }
 
     private void sendLang(Player player, String key, String... replacements) {

@@ -10,7 +10,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -184,11 +183,6 @@ public final class IslandDataStore {
     }
 
     private void saveFile(YamlConfiguration cfg) {
-        try {
-            file.getParentFile().mkdirs();
-            cfg.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save islands.yml: " + e.getMessage());
-        }
+        YamlFiles.saveAtomically(plugin, cfg, file, "islands.yml");
     }
 }

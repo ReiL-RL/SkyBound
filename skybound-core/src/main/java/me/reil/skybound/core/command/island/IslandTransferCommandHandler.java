@@ -76,6 +76,10 @@ public final class IslandTransferCommandHandler implements IslandSubCommandHandl
             context.lang().send(player, "number.price-required");
             return;
         }
+        if (!isValidPrice(price)) {
+            context.lang().send(player, "number.price-positive");
+            return;
+        }
 
         String error = plugin.getIslandTransferManager().createSaleOffer(player, target, price);
         if (error != null) {
@@ -110,5 +114,9 @@ public final class IslandTransferCommandHandler implements IslandSubCommandHandl
     private String getDisplayName(OfflinePlayer player, String fallback) {
         String name = player.getName();
         return name != null ? name : fallback;
+    }
+
+    private boolean isValidPrice(double price) {
+        return price > 0.0 && !Double.isNaN(price) && !Double.isInfinite(price);
     }
 }
