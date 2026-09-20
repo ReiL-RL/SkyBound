@@ -72,7 +72,7 @@ public final class RolePermissionsMenu extends Menu {
         }
 
         inventory.setItem(4, makeInfoItem());
-        inventory.setItem(22, makeItem(Material.ARROW, ChatColor.RED + "Back"));
+        addBackButton(22);
     }
 
     @Override
@@ -107,13 +107,13 @@ public final class RolePermissionsMenu extends Menu {
 
     private String getRoleColor(IslandRole role) {
         switch (role) {
-            case OWNER: return "\u00a76";
-            case ADMIN: return "\u00a7c";
-            case MODERATOR: return "\u00a7b";
-            case MEMBER: return "\u00a7a";
-            case TRUSTED: return "\u00a7e";
-            case COOP: return "\u00a77";
-            default: return "\u00a78";
+            case OWNER: return ChatColor.GOLD.toString();
+            case ADMIN: return ChatColor.RED.toString();
+            case MODERATOR: return ChatColor.AQUA.toString();
+            case MEMBER: return ChatColor.GREEN.toString();
+            case TRUSTED: return ChatColor.YELLOW.toString();
+            case COOP: return ChatColor.GRAY.toString();
+            default: return ChatColor.DARK_GRAY.toString();
         }
     }
 
@@ -121,10 +121,10 @@ public final class RolePermissionsMenu extends Menu {
         ItemStack info = new ItemStack(Material.OAK_SIGN);
         ItemMeta meta = info.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(ChatColor.YELLOW + "Role Permissions");
+            meta.setDisplayName(lang().get("menu.roles.info"));
             List<String> lore = new ArrayList<String>();
-            lore.add(ChatColor.GRAY + "Select a role to edit");
-            lore.add(ChatColor.GRAY + "its permissions.");
+            lore.add(lang().get("menu.roles.info-lore1"));
+            lore.add(lang().get("menu.roles.info-lore2"));
             meta.setLore(lore);
             info.setItemMeta(meta);
         }

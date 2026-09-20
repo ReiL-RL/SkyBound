@@ -1,7 +1,7 @@
 package me.reil.skybound.core.island;
 
+import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
@@ -14,7 +14,12 @@ import java.util.Map;
  */
 public final class IslandChestManager {
 
+    private final SkyBoundPlugin plugin;
     private final Map<String, Inventory> chests = new LinkedHashMap<String, Inventory>();
+
+    public IslandChestManager(SkyBoundPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     /**
      * Open the island chest for a player.
@@ -22,7 +27,8 @@ public final class IslandChestManager {
     public void open(Player player, String islandId, String islandName) {
         Inventory chest = chests.get(islandId);
         if (chest == null) {
-            chest = Bukkit.createInventory(null, 27, ChatColor.DARK_AQUA + "Island Chest - " + islandName);
+            chest = Bukkit.createInventory(null, 27,
+                    plugin.getLangManager().get("island.chest-title", "{island}", islandName));
             chests.put(islandId, chest);
         }
         player.openInventory(chest);

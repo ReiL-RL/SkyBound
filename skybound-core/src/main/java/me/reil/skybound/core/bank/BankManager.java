@@ -49,6 +49,8 @@ public final class BankManager implements BankProvider {
         economy.withdraw(player.getUniqueId(), amount);
         island.setBankBalance(island.getBankBalance() + amount);
         recordTransaction(island.getId(), player.getUniqueId(), BankTransaction.TransactionType.DEPOSIT, amount);
+        logToIsland(island, player, me.reil.skybound.core.island.IslandLogEntry.LogAction.BANK_DEPOSIT,
+                String.format("%.0f", amount));
         return true;
     }
 
@@ -59,7 +61,19 @@ public final class BankManager implements BankProvider {
         island.setBankBalance(island.getBankBalance() - amount);
         economy.deposit(player.getUniqueId(), amount);
         recordTransaction(island.getId(), player.getUniqueId(), BankTransaction.TransactionType.WITHDRAW, amount);
+        logToIsland(island, player, me.reil.skybound.core.island.IslandLogEntry.LogAction.BANK_WITHDRAW,
+                String.format("%.0f", amount));
         return true;
+    }
+
+    private void logToIsland(Island island, Player player,
+                             me.reil.skybound.core.island.IslandLogEntry.LogAction action, String details) {
+        try {
+            if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+                ((me.reil.skybound.core.SkyBoundPlugin) plugin).getIslandLogManager().log(
+                        island.getId(), player.getUniqueId(), player.getName(), action, details);
+            }
+        } catch (Throwable ignored) {}
     }
 
     @Override

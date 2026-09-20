@@ -1,6 +1,7 @@
 package me.reil.skybound.core.island;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.api.island.PrestigeProvider;
 import me.reil.skybound.core.config.CoreConfig;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -10,10 +11,10 @@ import java.util.Map;
 
 /**
  * Island prestige system.
- * Players can reset their island in exchange for a permanent multiplier bonus.
- * Each prestige level increases rewards (money, XP) by a configurable percentage.
+ * Players sacrifice island levels (XP) to earn prestige tokens for the prestige shop.
+ * No max prestige cap, no multiplier — purely a token accumulator.
  */
-public final class PrestigeManager {
+public final class PrestigeManager implements PrestigeProvider {
 
     private final JavaPlugin plugin;
     private final CoreConfig config;
@@ -21,90 +22,146 @@ public final class PrestigeManager {
     // islandId -> prestige level
     private final Map<String, Integer> prestigeLevels = new LinkedHashMap<String, Integer>();
 
-    // Configurable
-    private final int minLevelToPrestige;
-    private final double multiplierPerPrestige;
-    private final int maxPrestige;
-
     public PrestigeManager(JavaPlugin plugin, CoreConfig config, IslandManager islandManager) {
         this.plugin = plugin;
         this.config = config;
         this.islandManager = islandManager;
-        this.minLevelToPrestige = 30; // Must be level 30+ to prestige
-        this.multiplierPerPrestige = 0.1; // +10% per prestige
-        this.maxPrestige = 10;
+    }
+
+    /** Minimum island level required to prestige (from config). */
+    private int minLevel() {
+        return config.getPrestigeMinLevel();
+    }
+
+    /** XP cost for a single prestige (from config). */
+    public long getCostXp() {
+        return config.getPrestigeCostXp();
+    }
+
+    /** Tokens granted per single prestige (from config). */
+    public int getTokensPerPrestige() {
+        return config.getPrestigeTokensPerPrestige();
     }
 
     /**
-     * Get the prestige level of an island.
+     * How many prestiges the island can currently afford in one go,
+     * limited by both XP and the min-level requirement.
      */
+    public int affordableCount(Island island) {
+        if (island == null) return 0;
+        if (island.getLevel() < minLevel()) return 0;
+        long cost = getCostXp();
+        if (cost <= 0L) return 0;
+        long xp = island.getExperience();
+        long n = xp / cost;
+        return (int) Math.max(0L, Math.min(n, (long) Integer.MAX_VALUE));
+    }
+
+    /**
+     * Optional reference to prestige shop, set by SkyBoundPlugin after construction
+     * to avoid circular dependency. When set, prestige() will award tokens.
+     */
+    private me.reil.skybound.core.island.PrestigeShopManager prestigeShopManager;
+
+    public void setPrestigeShopManager(me.reil.skybound.core.island.PrestigeShopManager mgr) {
+        this.prestigeShopManager = mgr;
+    }
+
+    @Override
     public int getPrestigeLevel(String islandId) {
         Integer level = prestigeLevels.get(islandId);
         return level == null ? 0 : level;
     }
 
-    /**
-     * Get the multiplier bonus for an island (1.0 = no bonus, 1.1 = +10%, etc).
-     */
-    public double getMultiplier(String islandId) {
-        return 1.0 + (getPrestigeLevel(islandId) * multiplierPerPrestige);
+    @Override
+    public void setPrestigeLevel(String islandId, int level) {
+        if (level <= 0) {
+            prestigeLevels.remove(islandId);
+        } else {
+            prestigeLevels.put(islandId, level);
+        }
     }
 
     /**
-     * Check if an island can prestige.
+     * Multiplier is no longer used. Always returns 1.0.
+     * Kept for API compatibility.
      */
+    @Override
+    public double getMultiplier(String islandId) {
+        return 1.0;
+    }
+
+    @Override
     public boolean canPrestige(Island island) {
         if (island == null) return false;
-        if (island.getLevel() < minLevelToPrestige) return false;
-        return getPrestigeLevel(island.getId()) < maxPrestige;
+        return island.getLevel() >= minLevel() && island.getExperience() >= getCostXp();
     }
 
     /**
-     * Perform prestige: reset island level/XP, increment prestige.
-     * @return true if successful
+     * Perform a single prestige (delegates to bulk with count=1).
      */
+    @Override
     public boolean prestige(Player player, Island island) {
-        if (!canPrestige(island)) return false;
+        return prestige(player, island, 1) > 0;
+    }
+
+    /**
+     * Perform up to {@code count} prestiges at once. Deducts {@code count × costXp}
+     * from the island XP (keeping the remainder), grants tokens, increments prestige.
+     * Bank is NOT touched. Returns the number of prestiges actually performed
+     * (limited by available XP and min-level requirement).
+     */
+    public int prestige(Player player, Island island, int count) {
+        if (island == null || count <= 0) return 0;
+        if (island.getLevel() < minLevel()) return 0;
+
+        long cost = getCostXp();
+        if (cost <= 0L) return 0;
+
+        int affordable = affordableCount(island);
+        int doCount = Math.min(count, affordable);
+        if (doCount <= 0) return 0;
+
+        long totalCost = cost * (long) doCount;
+        long currentXp = island.getExperience();
+        long remaining = Math.max(0L, currentXp - totalCost);
+
+        if (island instanceof IslandImpl) {
+            ((IslandImpl) island).setExperience(remaining);
+        } else {
+            island.addExperience(-totalCost);
+        }
 
         int currentPrestige = getPrestigeLevel(island.getId());
-        int newPrestige = currentPrestige + 1;
-
-        // Reset island progress
-        island.setLevel(1);
-        // Reset XP by setting experience to 0 (need to handle in IslandImpl)
-        island.setBankBalance(0.0);
-
-        // Increment prestige
+        int newPrestige = currentPrestige + doCount;
         prestigeLevels.put(island.getId(), newPrestige);
 
-        plugin.getLogger().info("Island " + island.getId() + " prestiged to level " + newPrestige);
-        return true;
+        if (prestigeShopManager != null) {
+            prestigeShopManager.addTokens(island.getId(), getTokensPerPrestige() * doCount);
+        }
+
+        plugin.getLogger().info("Island " + island.getId() + " prestiged +" + doCount
+                + " → level " + newPrestige + " (cost=" + totalCost + " XP, remaining=" + remaining + ")");
+        return doCount;
     }
 
-    /**
-     * Get minimum level required to prestige.
-     */
+    @Override
     public int getMinLevelToPrestige() {
-        return minLevelToPrestige;
+        return minLevel();
     }
 
     /**
-     * Get max prestige level.
+     * No upper limit anymore. Returns Integer.MAX_VALUE for API compatibility.
      */
+    @Override
     public int getMaxPrestige() {
-        return maxPrestige;
+        return Integer.MAX_VALUE;
     }
 
-    /**
-     * Get all prestige data for persistence.
-     */
     public Map<String, Integer> getAllPrestigeLevels() {
         return prestigeLevels;
     }
 
-    /**
-     * Load prestige data from persistence.
-     */
     public void setAllPrestigeLevels(Map<String, Integer> data) {
         prestigeLevels.clear();
         prestigeLevels.putAll(data);

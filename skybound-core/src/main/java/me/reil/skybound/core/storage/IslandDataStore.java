@@ -41,8 +41,18 @@ public final class IslandDataStore {
             ConfigurationSection is = section.getConfigurationSection(id);
             if (is == null) continue;
 
-            UUID owner = UUID.fromString(is.getString("owner"));
+            UUID owner;
+            try {
+                owner = UUID.fromString(is.getString("owner", ""));
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Skipping island '" + id + "' with invalid owner UUID.");
+                continue;
+            }
             Location center = deserializeLocation(is.getConfigurationSection("center"));
+            if (center == null) {
+                plugin.getLogger().warning("Skipping island '" + id + "' with missing center location.");
+                continue;
+            }
             int radius = is.getInt("radius", 60);
 
             IslandImpl island = new IslandImpl(id, owner, center, radius);
@@ -52,6 +62,7 @@ public final class IslandDataStore {
             island.addExperience(is.getLong("experience", 0L) - island.getExperience());
             island.setBankBalance(is.getDouble("bank-balance", 0.0));
             island.setLocked(is.getBoolean("locked", false));
+            island.setValue(is.getDouble("value", 0.0));
 
             Location home = deserializeLocation(is.getConfigurationSection("home"));
             if (home != null) island.setHome(home);
@@ -63,8 +74,20 @@ public final class IslandDataStore {
             ConfigurationSection members = is.getConfigurationSection("members");
             if (members != null) {
                 for (String uuidStr : members.getKeys(false)) {
-                    UUID memberId = UUID.fromString(uuidStr);
-                    IslandRole role = IslandRole.valueOf(members.getString(uuidStr, "MEMBER"));
+                    UUID memberId;
+                    try {
+                        memberId = UUID.fromString(uuidStr);
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Skipping invalid member UUID '" + uuidStr + "' for island " + id + ".");
+                        continue;
+                    }
+                    IslandRole role;
+                    try {
+                        role = IslandRole.valueOf(members.getString(uuidStr, "MEMBER"));
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Invalid role for member '" + uuidStr + "' on island " + id + ", using MEMBER.");
+                        role = IslandRole.MEMBER;
+                    }
                     if (!memberId.equals(owner)) {
                         island.addMember(memberId, role);
                     }
@@ -110,6 +133,7 @@ public final class IslandDataStore {
             cfg.set(path + ".radius", island.getRadius());
             cfg.set(path + ".bank-balance", island.getBankBalance());
             cfg.set(path + ".locked", island.isLocked());
+            cfg.set(path + ".value", island.getValue());
             cfg.set(path + ".schematic-name", island.getSchematicName());
 
             serializeLocation(cfg, path + ".center", island.getCenter());

@@ -87,6 +87,7 @@ public final class IslandPermissionManager {
         modPerms.add(IslandPermission.SET_WARP);
         modPerms.add(IslandPermission.DELETE_WARP);
         modPerms.add(IslandPermission.BANK_WITHDRAW);
+        modPerms.add(IslandPermission.MANAGE_SHOP);
         ROLE_DEFAULTS.put(IslandRole.MODERATOR, modPerms);
 
         // ADMIN: moderator + settings

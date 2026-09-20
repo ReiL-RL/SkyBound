@@ -105,8 +105,23 @@ public final class SkyBoundPlugin extends JavaPlugin {
     private TradeManager tradeManager;
     private VisitManager visitManager;
     private RecipeManager recipeManager;
+    private me.reil.skybound.core.island.IslandChatManager islandChatManager;
+    private me.reil.skybound.core.island.IslandBorderManager islandBorderManager;
+    private me.reil.skybound.core.island.IslandGiftManager islandGiftManager;
+    private me.reil.skybound.core.island.IslandReviewManager islandReviewManager;
+    private me.reil.skybound.core.island.PlayerStatsManager playerStatsManager;
+    private me.reil.skybound.core.island.IslandAllianceManager islandAllianceManager;
+    private me.reil.skybound.core.island.IslandTaxManager islandTaxManager;
+    private me.reil.skybound.core.island.IslandTransferManager islandTransferManager;
+    private me.reil.skybound.core.island.PrestigeShopManager prestigeShopManager;
+    private me.reil.skybound.core.island.PlayerShopManager playerShopManager;
+    private me.reil.skybound.core.menu.IslandValueMenu islandValueMenu;
     private BukkitTask autosaveTask;
     private BukkitTask boosterTickTask;
+    private BukkitTask valueRecalculationTask;
+    private int valueRecalculationCursor;
+    private long nextValueRecalculationAt;
+    private java.util.List<Island> valueRecalculationBatch;
 
     @Override
     public void onEnable() {
@@ -129,6 +144,8 @@ public final class SkyBoundPlugin extends JavaPlugin {
 
         // Core managers
         this.islandManager = new IslandManager(this, coreConfig, storageManager);
+        // Wire IslandImpl static xp-per-level from config so addExperience() correctly bumps level
+        me.reil.skybound.core.island.IslandImpl.setXpPerLevel(coreConfig.getXpPerLevel());
         this.economyProvider = new VaultEconomyProvider(this);
         this.teamManager = new TeamManager(this, islandManager);
         this.bankManager = new BankManager(this, coreConfig, islandManager, economyProvider);
@@ -142,7 +159,7 @@ public final class SkyBoundPlugin extends JavaPlugin {
         this.schematicService = new SchematicService(this);
         this.langManager = new LangManager(this, coreConfig.getLanguage());
         this.islandLogManager = new IslandLogManager();
-        this.islandChestManager = new IslandChestManager();
+        this.islandChestManager = new IslandChestManager(this);
         this.confirmationManager = new ConfirmationManager();
         this.biomeService = new BiomeService();
         this.prestigeManager = new PrestigeManager(this, coreConfig, islandManager);
@@ -163,6 +180,41 @@ public final class SkyBoundPlugin extends JavaPlugin {
         // Custom recipes
         this.recipeManager = new RecipeManager(this);
 
+        // Island chat (toggle with /is chat — sends to members only)
+        this.islandChatManager = new me.reil.skybound.core.island.IslandChatManager(this, islandManager);
+
+        // Per-island border (color + visibility)
+        this.islandBorderManager = new me.reil.skybound.core.island.IslandBorderManager(this);
+
+        // Cross-island gifts (with daily limit)
+        this.islandGiftManager = new me.reil.skybound.core.island.IslandGiftManager(this);
+
+        // Reviews / star ratings
+        this.islandReviewManager = new me.reil.skybound.core.island.IslandReviewManager(this);
+
+        // Per-player statistics
+        this.playerStatsManager = new me.reil.skybound.core.island.PlayerStatsManager(this);
+
+        // Alliances between islands
+        this.islandAllianceManager = new me.reil.skybound.core.island.IslandAllianceManager(this, islandManager);
+
+        // Island tax (toggled in config, charges island bank periodically)
+        this.islandTaxManager = new me.reil.skybound.core.island.IslandTaxManager(this, islandManager);
+        this.islandTaxManager.start();
+
+        // Island transfer + sell flow
+        this.islandTransferManager = new me.reil.skybound.core.island.IslandTransferManager(this, islandManager, economyProvider);
+
+        // Prestige shop (tokens earned on prestige, spent on items)
+        this.prestigeShopManager = new me.reil.skybound.core.island.PrestigeShopManager(this);
+        this.prestigeManager.setPrestigeShopManager(prestigeShopManager);
+
+        // Per-island player shops (chest-based)
+        this.playerShopManager = new me.reil.skybound.core.island.PlayerShopManager(this);
+
+        // Built-in deposit menu used when island-core addon is NOT installed
+        this.islandValueMenu = new me.reil.skybound.core.menu.IslandValueMenu(this);
+
         // Register all services in API
         SkyBoundAPI api = SkyBoundAPI.get();
         api.register(IslandProvider.class, islandManager);
@@ -179,6 +231,7 @@ public final class SkyBoundPlugin extends JavaPlugin {
         api.register(SeasonProvider.class, seasonManager);
         api.register(TradeProvider.class, tradeManager);
         api.register(VisitProvider.class, visitManager);
+        api.register(me.reil.skybound.api.island.PrestigeProvider.class, prestigeManager);
 
         // Register commands
         registerCommands();
@@ -199,6 +252,14 @@ public final class SkyBoundPlugin extends JavaPlugin {
                 storageManager.saveMissionProgress(missionManager.getAllProgress());
                 storageManager.saveUpgrades(upgradeManager.getAllUpgradeLevels());
                 storageManager.saveBoosters(boosterManager.getAllActiveBoosters());
+                if (islandGiftManager != null) islandGiftManager.save();
+                if (islandReviewManager != null) islandReviewManager.save();
+                if (playerStatsManager != null) playerStatsManager.save();
+                if (islandAllianceManager != null) islandAllianceManager.save();
+                if (islandTaxManager != null) islandTaxManager.save();
+                if (prestigeShopManager != null) prestigeShopManager.saveTokens();
+                if (playerShopManager != null) playerShopManager.save();
+                if (islandBorderManager != null) islandBorderManager.save();
             }
         });
 
@@ -216,6 +277,7 @@ public final class SkyBoundPlugin extends JavaPlugin {
         // Stop tasks
         if (autosaveTask != null) autosaveTask.cancel();
         if (boosterTickTask != null) boosterTickTask.cancel();
+        if (valueRecalculationTask != null) valueRecalculationTask.cancel();
         if (borderVisualListener != null) borderVisualListener.stop();
 
         // Shutdown new managers
@@ -306,12 +368,31 @@ public final class SkyBoundPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new IslandFlyListener(islandManager, boosterManager, coreConfig), this);
         Bukkit.getPluginManager().registerEvents(new EntityLimitListener(islandManager, upgradeManager), this);
 
-        this.autosellListener = new AutosellListener(islandManager, shopManager, economyProvider);
+        this.autosellListener = new AutosellListener(shopManager, economyProvider);
         Bukkit.getPluginManager().registerEvents(autosellListener, this);
         Bukkit.getPluginManager().registerEvents(new SpawnerStackListener(this, islandManager), this);
 
-        this.borderVisualListener = new BorderVisualListener(this, islandManager, coreConfig);
+        this.borderVisualListener = new BorderVisualListener(this, islandManager, islandBorderManager, coreConfig);
         this.borderVisualListener.start();
+
+        // Island chat listener (intercepts AsyncPlayerChatEvent for toggled players)
+        Bukkit.getPluginManager().registerEvents(
+                new me.reil.skybound.core.listener.IslandChatListener(this, islandChatManager), this);
+
+        // Player stats listener
+        Bukkit.getPluginManager().registerEvents(
+                new me.reil.skybound.core.listener.PlayerStatsListener(playerStatsManager), this);
+
+        // Alliance chat listener
+        Bukkit.getPluginManager().registerEvents(
+                new me.reil.skybound.core.listener.AllianceChatListener(this, islandAllianceManager), this);
+
+        // Player shop listener
+        Bukkit.getPluginManager().registerEvents(
+                new me.reil.skybound.core.listener.PlayerShopListener(this), this);
+
+        // Built-in value deposit menu listener
+        Bukkit.getPluginManager().registerEvents(islandValueMenu, this);
 
         me.reil.skybound.core.integration.PlaceholderExpansion papi = new me.reil.skybound.core.integration.PlaceholderExpansion(this);
         papi.register();
@@ -326,7 +407,7 @@ public final class SkyBoundPlugin extends JavaPlugin {
 
     private void startAutosave() {
         long ticks = Math.max(20L, coreConfig.getAutosaveSeconds() * 20L);
-        this.autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, new Runnable() {
+        this.autosaveTask = Bukkit.getScheduler().runTaskTimer(this, new Runnable() {
             @Override
             public void run() {
                 storageManager.saveAll();
@@ -344,16 +425,37 @@ public final class SkyBoundPlugin extends JavaPlugin {
     }
 
     private void startValueRecalculation() {
-        // Recalculate island values every 5 minutes
-        Bukkit.getScheduler().runTaskTimer(this, new Runnable() {
+        this.valueRecalculationTask = Bukkit.getScheduler().runTaskTimer(this, new Runnable() {
             @Override
             public void run() {
-                for (Island island : islandManager.getAllIslands()) {
-                    islandManager.recalculateValue((me.reil.skybound.core.island.IslandImpl) island);
+                long now = System.currentTimeMillis();
+                if (valueRecalculationBatch == null) {
+                    if (now < nextValueRecalculationAt) {
+                        return;
+                    }
+                    valueRecalculationBatch = new java.util.ArrayList<Island>(islandManager.getAllIslands());
+                    valueRecalculationCursor = 0;
+                    nextValueRecalculationAt = now + 300000L;
                 }
-                leaderboardManager.recalculate();
+
+                if (valueRecalculationBatch.isEmpty()) {
+                    valueRecalculationBatch = null;
+                    leaderboardManager.recalculate();
+                    return;
+                }
+
+                if (valueRecalculationCursor >= valueRecalculationBatch.size()) {
+                    valueRecalculationBatch = null;
+                    valueRecalculationCursor = 0;
+                    leaderboardManager.recalculate();
+                    return;
+                }
+
+                Island island = valueRecalculationBatch.get(valueRecalculationCursor);
+                valueRecalculationCursor++;
+                islandManager.recalculateValue((me.reil.skybound.core.island.IslandImpl) island);
             }
-        }, 6000L, 6000L);
+        }, 6000L, 20L);
     }
 
     // Getters for internal use by commands/listeners
@@ -385,4 +487,16 @@ public final class SkyBoundPlugin extends JavaPlugin {
     public TradeManager getTradeManager() { return tradeManager; }
     public VisitManager getVisitManager() { return visitManager; }
     public RecipeManager getRecipeManager() { return recipeManager; }
+    public me.reil.skybound.core.island.IslandChatManager getIslandChatManager() { return islandChatManager; }
+    public me.reil.skybound.core.island.IslandBorderManager getIslandBorderManager() { return islandBorderManager; }
+    public me.reil.skybound.core.island.IslandGiftManager getIslandGiftManager() { return islandGiftManager; }
+    public me.reil.skybound.core.island.IslandReviewManager getIslandReviewManager() { return islandReviewManager; }
+    public me.reil.skybound.core.island.PlayerStatsManager getPlayerStatsManager() { return playerStatsManager; }
+    public me.reil.skybound.core.island.IslandAllianceManager getIslandAllianceManager() { return islandAllianceManager; }
+    public me.reil.skybound.core.island.IslandTaxManager getIslandTaxManager() { return islandTaxManager; }
+    public me.reil.skybound.core.island.IslandTransferManager getIslandTransferManager() { return islandTransferManager; }
+    public me.reil.skybound.core.island.PrestigeShopManager getPrestigeShopManager() { return prestigeShopManager; }
+    public me.reil.skybound.core.island.PlayerShopManager getPlayerShopManager() { return playerShopManager; }
+    public me.reil.skybound.core.menu.IslandValueMenu getIslandValueMenu() { return islandValueMenu; }
+    public BorderVisualListener getBorderVisualListener() { return borderVisualListener; }
 }

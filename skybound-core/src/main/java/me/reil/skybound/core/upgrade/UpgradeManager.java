@@ -91,6 +91,41 @@ public final class UpgradeManager implements UpgradeProvider {
         levels.put(upgradeId, nextLevel);
 
         applyUpgrade(island, upgradeId, nextLevel);
+
+        // Log to island journal
+        try {
+            if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+                ((me.reil.skybound.core.SkyBoundPlugin) plugin).getIslandLogManager().log(
+                        island.getId(), buyer.getUniqueId(), buyer.getName(),
+                        me.reil.skybound.core.island.IslandLogEntry.LogAction.UPGRADE_PURCHASE,
+                        upgradeId + " → ур. " + nextLevel + " (" + (int) cost + ")");
+            }
+        } catch (Throwable ignored) {}
+
+        return true;
+    }
+
+    @Override
+    public boolean forceUpgrade(Island island, String upgradeId) {
+        UpgradeImpl upgrade = upgrades.get(upgradeId);
+        if (upgrade == null || island == null) {
+            ((org.bukkit.plugin.java.JavaPlugin) org.bukkit.Bukkit.getPluginManager().getPlugin("SkyBound")).getLogger().warning("forceUpgrade failed: upgrade=" + upgradeId + " found=" + (upgrade != null) + " island=" + (island != null) + " available=" + upgrades.keySet());
+            return false;
+        }
+
+        int currentLevel = getLevel(island, upgradeId);
+        if (currentLevel >= upgrade.getMaxLevel()) return false;
+
+        int nextLevel = currentLevel + 1;
+
+        Map<String, Integer> levels = islandUpgrades.get(island.getId());
+        if (levels == null) {
+            levels = new LinkedHashMap<String, Integer>();
+            islandUpgrades.put(island.getId(), levels);
+        }
+        levels.put(upgradeId, nextLevel);
+
+        applyUpgrade(island, upgradeId, nextLevel);
         return true;
     }
 

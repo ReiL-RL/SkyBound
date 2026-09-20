@@ -61,6 +61,12 @@ public final class CoreConfig {
     // Economy type
     private String economyType;
 
+    // Prestige
+    private int prestigeMinLevel;
+    private long prestigeCostXp;
+    private int prestigeTokensPerPrestige;
+    private boolean prestigeMenuInUpgrades;
+
     public CoreConfig(JavaPlugin plugin) {
         this.plugin = plugin;
     }
@@ -121,6 +127,17 @@ public final class CoreConfig {
 
         // Economy type
         this.economyType = config.getString("economy.type", "VAULT");
+
+        // Prestige
+        this.prestigeMinLevel = config.getInt("prestige.min-level", 30);
+        // Cost in XP per single prestige. If not set (<=0), default to min-level × xp-per-level.
+        long defaultCost = (long) this.prestigeMinLevel * (long) this.xpPerLevel;
+        this.prestigeCostXp = config.getLong("prestige.cost-xp", defaultCost);
+        if (this.prestigeCostXp <= 0L) this.prestigeCostXp = defaultCost;
+        this.prestigeTokensPerPrestige = config.getInt("prestige.tokens-per-prestige", 1);
+        if (this.prestigeTokensPerPrestige < 1) this.prestigeTokensPerPrestige = 1;
+        // Show prestige button inside the upgrades menu ("Ядро улучшений")
+        this.prestigeMenuInUpgrades = config.getBoolean("prestige.show-in-upgrades", true);
     }
 
     public void reload() {
@@ -152,4 +169,10 @@ public final class CoreConfig {
     public boolean isIslandCoreDisableUpgradeMenu() { return islandCoreDisableUpgradeMenu; }
     public boolean isIslandCoreDisablePassiveXp() { return islandCoreDisablePassiveXp; }
     public String getEconomyType() { return economyType; }
+
+    // Prestige getters
+    public int getPrestigeMinLevel() { return prestigeMinLevel; }
+    public long getPrestigeCostXp() { return prestigeCostXp; }
+    public int getPrestigeTokensPerPrestige() { return prestigeTokensPerPrestige; }
+    public boolean isPrestigeMenuInUpgrades() { return prestigeMenuInUpgrades; }
 }

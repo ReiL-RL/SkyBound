@@ -33,7 +33,13 @@ public final class MissionDataStore {
         if (players == null) return result;
 
         for (String uuidStr : players.getKeys(false)) {
-            UUID playerId = UUID.fromString(uuidStr);
+            UUID playerId;
+            try {
+                playerId = UUID.fromString(uuidStr);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Skipping mission progress for invalid player UUID: " + uuidStr);
+                continue;
+            }
             Map<String, MissionProgressImpl> missions = new LinkedHashMap<String, MissionProgressImpl>();
 
             ConfigurationSection playerSection = players.getConfigurationSection(uuidStr);

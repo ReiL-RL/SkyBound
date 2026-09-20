@@ -1,196 +1,1240 @@
-# SkyBound Shop Configuration
+# ╔═══════════════════════════════════════════════════════════════╗
+# ║         SkyBound Shop Configuration                           ║
+# ║                                                               ║
+# ║  Категории:                                                   ║
+# ║    blocks       — строительные блоки                          ║
+# ║    ores         — руды, металлы, минералы                     ║
+# ║    farming      — урожай, семена, корма                       ║
+# ║    food         — еда                                          ║
+# ║    tools        — инструменты, оружие                         ║
+# ║    armor        — броня                                       ║
+# ║    redstone     — редстоун-механика                           ║
+# ║    decoration   — декор и краски                              ║
+# ║    brewing      — алхимия                                      ║
+# ║    spawners     — спавн-яйца                                  ║
+# ║    special      — редкие, сезонные                            ║
+# ║                                                               ║
+# ║  Поля предмета:                                               ║
+# ║    display-name   — название с цветовыми кодами               ║
+# ║    material       — bukkit Material                           ║
+# ║    item           — сериализованный Bukkit ItemStack (опц.)   ║
+# ║                     для предметов с meta/NBT вместо material  ║
+# ║    buy-price      — цена покупки (0 = нельзя купить)         ║
+# ║    sell-price     — цена продажи (0 = нельзя продать)         ║
+# ║    default-amount — кол-во за один клик                       ║
+# ║    slot           — слот в GUI категории                      ║
+# ║    lore           — описание (с & цветами)                    ║
+# ║    commands       — команды от консоли (опц.)                 ║
+# ╚═══════════════════════════════════════════════════════════════╝
+
 categories:
+
+  # ═══════════════════ БЛОКИ ═══════════════════
   blocks:
-    display-name: "&6Blocks"
+    display-name: "&6&l✦ Блоки"
     icon: GRASS_BLOCK
     slot: 10
     items:
       cobblestone:
-        display-name: "&7Cobblestone"
+        display-name: "&7Булыжник"
         material: COBBLESTONE
         buy-price: 3.0
         sell-price: 1.0
         default-amount: 64
         slot: 0
+        lore:
+          - "&7Базовый строительный блок"
+      stone:
+        display-name: "&7Камень"
+        material: STONE
+        buy-price: 5.0
+        sell-price: 2.0
+        default-amount: 64
+        slot: 1
+      stone_bricks:
+        display-name: "&8Каменные кирпичи"
+        material: STONE_BRICKS
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 64
+        slot: 2
+      bricks:
+        display-name: "&cКирпичи"
+        material: BRICKS
+        buy-price: 12.0
+        sell-price: 5.0
+        default-amount: 64
+        slot: 3
       dirt:
-        display-name: "&7Dirt"
+        display-name: "&7Земля"
         material: DIRT
         buy-price: 2.0
         sell-price: 0.5
         default-amount: 64
-        slot: 1
+        slot: 4
       sand:
-        display-name: "&eSand"
+        display-name: "&eПесок"
         material: SAND
         buy-price: 4.0
         sell-price: 1.5
         default-amount: 64
-        slot: 2
+        slot: 5
       gravel:
-        display-name: "&7Gravel"
+        display-name: "&7Гравий"
         material: GRAVEL
         buy-price: 4.0
         sell-price: 1.5
         default-amount: 64
-        slot: 3
+        slot: 6
       glass:
-        display-name: "&fGlass"
+        display-name: "&fСтекло"
         material: GLASS
         buy-price: 8.0
         sell-price: 3.0
         default-amount: 64
-        slot: 4
+        slot: 7
+      glowstone:
+        display-name: "&eСветокамень"
+        material: GLOWSTONE
+        buy-price: 50.0
+        sell-price: 20.0
+        default-amount: 16
+        slot: 8
       oak_log:
-        display-name: "&6Oak Log"
+        display-name: "&6Дубовое бревно"
         material: OAK_LOG
         buy-price: 10.0
         sell-price: 4.0
         default-amount: 64
-        slot: 5
+        slot: 9
+      birch_log:
+        display-name: "&fБерёзовое бревно"
+        material: BIRCH_LOG
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 64
+        slot: 10
+      spruce_log:
+        display-name: "&8Еловое бревно"
+        material: SPRUCE_LOG
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 64
+        slot: 11
+      jungle_log:
+        display-name: "&aТропическое бревно"
+        material: JUNGLE_LOG
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 64
+        slot: 12
+      acacia_log:
+        display-name: "&6Акациевое бревно"
+        material: ACACIA_LOG
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 64
+        slot: 13
+      dark_oak_log:
+        display-name: "&8Тёмно-дубовое бревно"
+        material: DARK_OAK_LOG
+        buy-price: 12.0
+        sell-price: 5.0
+        default-amount: 64
+        slot: 14
+      obsidian:
+        display-name: "&5Обсидиан"
+        material: OBSIDIAN
+        buy-price: 100.0
+        sell-price: 40.0
+        default-amount: 8
+        slot: 15
+        lore:
+          - "&7Прочный блок"
+          - "&7для порталов"
+      netherrack:
+        display-name: "&4Незеррак"
+        material: NETHERRACK
+        buy-price: 5.0
+        sell-price: 2.0
+        default-amount: 64
+        slot: 16
+      end_stone:
+        display-name: "&eКамень края"
+        material: END_STONE
+        buy-price: 30.0
+        sell-price: 12.0
+        default-amount: 32
+        slot: 17
 
+  # ═══════════════════ РУДЫ ═══════════════════
   ores:
-    display-name: "&bOres"
+    display-name: "&b&l✦ Руды и металлы"
     icon: DIAMOND_ORE
-    slot: 12
+    slot: 11
     items:
       coal:
-        display-name: "&8Coal"
+        display-name: "&8Уголь"
         material: COAL
         buy-price: 5.0
         sell-price: 2.0
         default-amount: 64
         slot: 0
       iron_ingot:
-        display-name: "&fIron Ingot"
+        display-name: "&fЖелезный слиток"
         material: IRON_INGOT
         buy-price: 15.0
         sell-price: 6.0
         default-amount: 16
         slot: 1
       gold_ingot:
-        display-name: "&6Gold Ingot"
+        display-name: "&6Золотой слиток"
         material: GOLD_INGOT
         buy-price: 30.0
         sell-price: 12.0
         default-amount: 16
         slot: 2
+      copper_ingot:
+        display-name: "&cМедный слиток"
+        material: COPPER_INGOT
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 32
+        slot: 3
       diamond:
-        display-name: "&bDiamond"
+        display-name: "&bАлмаз"
         material: DIAMOND
         buy-price: 100.0
         sell-price: 40.0
         default-amount: 8
-        slot: 3
+        slot: 4
+        lore:
+          - "&7Драгоценный камень"
+          - "&7для крафта снаряжения"
       emerald:
-        display-name: "&aEmerald"
+        display-name: "&aИзумруд"
         material: EMERALD
         buy-price: 120.0
         sell-price: 50.0
         default-amount: 8
-        slot: 4
+        slot: 5
       lapis_lazuli:
-        display-name: "&9Lapis Lazuli"
+        display-name: "&9Лазурит"
         material: LAPIS_LAZULI
         buy-price: 12.0
         sell-price: 5.0
         default-amount: 32
-        slot: 5
+        slot: 6
+      redstone:
+        display-name: "&cРедстоун"
+        material: REDSTONE
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 32
+        slot: 7
+      quartz:
+        display-name: "&fКварц"
+        material: QUARTZ
+        buy-price: 20.0
+        sell-price: 8.0
+        default-amount: 32
+        slot: 8
+      netherite_scrap:
+        display-name: "&8Незерит-обломок"
+        material: NETHERITE_SCRAP
+        buy-price: 800.0
+        sell-price: 320.0
+        default-amount: 4
+        slot: 9
+      netherite_ingot:
+        display-name: "&8&lНезерит-слиток"
+        material: NETHERITE_INGOT
+        buy-price: 5000.0
+        sell-price: 2000.0
+        default-amount: 1
+        slot: 10
+        lore:
+          - "&7Лучший металл в игре"
+          - "&8★ Премиум"
+      iron_block:
+        display-name: "&fЖелезный блок"
+        material: IRON_BLOCK
+        buy-price: 150.0
+        sell-price: 60.0
+        default-amount: 4
+        slot: 11
+      gold_block:
+        display-name: "&6Золотой блок"
+        material: GOLD_BLOCK
+        buy-price: 300.0
+        sell-price: 120.0
+        default-amount: 4
+        slot: 12
+      diamond_block:
+        display-name: "&bАлмазный блок"
+        material: DIAMOND_BLOCK
+        buy-price: 1000.0
+        sell-price: 400.0
+        default-amount: 1
+        slot: 13
+      emerald_block:
+        display-name: "&aИзумрудный блок"
+        material: EMERALD_BLOCK
+        buy-price: 1200.0
+        sell-price: 480.0
+        default-amount: 1
+        slot: 14
 
+  # ═══════════════════ ФЕРМА ═══════════════════
+  farming:
+    display-name: "&2&l✦ Фермерство"
+    icon: WHEAT_SEEDS
+    slot: 12
+    items:
+      wheat_seeds:
+        display-name: "&aСемена пшеницы"
+        material: WHEAT_SEEDS
+        buy-price: 2.0
+        sell-price: 0.5
+        default-amount: 32
+        slot: 0
+      wheat:
+        display-name: "&eПшеница"
+        material: WHEAT
+        buy-price: 5.0
+        sell-price: 2.0
+        default-amount: 32
+        slot: 1
+      potato:
+        display-name: "&6Картофель"
+        material: POTATO
+        buy-price: 4.0
+        sell-price: 1.5
+        default-amount: 32
+        slot: 2
+      carrot:
+        display-name: "&6Морковь"
+        material: CARROT
+        buy-price: 4.0
+        sell-price: 1.5
+        default-amount: 32
+        slot: 3
+      beetroot:
+        display-name: "&cСвекла"
+        material: BEETROOT
+        buy-price: 5.0
+        sell-price: 2.0
+        default-amount: 32
+        slot: 4
+      sugar_cane:
+        display-name: "&aСахарный тростник"
+        material: SUGAR_CANE
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 16
+        slot: 5
+      pumpkin:
+        display-name: "&6Тыква"
+        material: PUMPKIN
+        buy-price: 15.0
+        sell-price: 6.0
+        default-amount: 16
+        slot: 6
+      melon:
+        display-name: "&aАрбуз"
+        material: MELON
+        buy-price: 15.0
+        sell-price: 6.0
+        default-amount: 16
+        slot: 7
+      cocoa_beans:
+        display-name: "&6Какао"
+        material: COCOA_BEANS
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 32
+        slot: 8
+      cactus:
+        display-name: "&2Кактус"
+        material: CACTUS
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 16
+        slot: 9
+      bamboo:
+        display-name: "&aБамбук"
+        material: BAMBOO
+        buy-price: 6.0
+        sell-price: 2.0
+        default-amount: 32
+        slot: 10
+      bone_meal:
+        display-name: "&fКостная мука"
+        material: BONE_MEAL
+        buy-price: 5.0
+        sell-price: 2.0
+        default-amount: 32
+        slot: 11
+      hay_block:
+        display-name: "&eСтог сена"
+        material: HAY_BLOCK
+        buy-price: 30.0
+        sell-price: 12.0
+        default-amount: 8
+        slot: 12
+
+  # ═══════════════════ ЕДА ═══════════════════
   food:
-    display-name: "&aFood"
+    display-name: "&a&l✦ Еда"
     icon: COOKED_BEEF
-    slot: 14
+    slot: 13
     items:
       bread:
-        display-name: "&6Bread"
+        display-name: "&6Хлеб"
         material: BREAD
         buy-price: 8.0
         sell-price: 3.0
         default-amount: 16
         slot: 0
       cooked_beef:
-        display-name: "&6Steak"
+        display-name: "&6Стейк"
         material: COOKED_BEEF
         buy-price: 12.0
         sell-price: 5.0
         default-amount: 16
         slot: 1
-      golden_apple:
-        display-name: "&6Golden Apple"
-        material: GOLDEN_APPLE
-        buy-price: 500.0
-        sell-price: 200.0
-        default-amount: 1
+      cooked_porkchop:
+        display-name: "&6Жареная свинина"
+        material: COOKED_PORKCHOP
+        buy-price: 12.0
+        sell-price: 5.0
+        default-amount: 16
         slot: 2
+      cooked_chicken:
+        display-name: "&6Жареная курица"
+        material: COOKED_CHICKEN
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 16
+        slot: 3
+      cooked_salmon:
+        display-name: "&6Жареный лосось"
+        material: COOKED_SALMON
+        buy-price: 14.0
+        sell-price: 6.0
+        default-amount: 16
+        slot: 4
+      cake:
+        display-name: "&dТорт"
+        material: CAKE
+        buy-price: 100.0
+        sell-price: 40.0
+        default-amount: 1
+        slot: 5
+      cookie:
+        display-name: "&6Печенье"
+        material: COOKIE
+        buy-price: 6.0
+        sell-price: 2.0
+        default-amount: 32
+        slot: 6
       melon_slice:
-        display-name: "&aMelon"
+        display-name: "&aАрбузная долька"
         material: MELON_SLICE
         buy-price: 3.0
         sell-price: 1.0
         default-amount: 64
-        slot: 3
-
-  farming:
-    display-name: "&2Farming"
-    icon: WHEAT_SEEDS
-    slot: 16
-    items:
-      wheat_seeds:
-        display-name: "&aWheat Seeds"
-        material: WHEAT_SEEDS
-        buy-price: 2.0
-        sell-price: 0.5
-        default-amount: 32
-        slot: 0
-      bone_meal:
-        display-name: "&fBone Meal"
-        material: BONE_MEAL
-        buy-price: 5.0
-        sell-price: 2.0
-        default-amount: 32
-        slot: 1
-      sugar_cane:
-        display-name: "&aSugar Cane"
-        material: SUGAR_CANE
+        slot: 7
+      apple:
+        display-name: "&cЯблоко"
+        material: APPLE
         buy-price: 10.0
         sell-price: 4.0
         default-amount: 16
-        slot: 2
-      pumpkin:
-        display-name: "&6Pumpkin"
-        material: PUMPKIN
-        buy-price: 15.0
-        sell-price: 6.0
-        default-amount: 16
-        slot: 3
-      cactus:
-        display-name: "&2Cactus"
-        material: CACTUS
-        buy-price: 8.0
-        sell-price: 3.0
-        default-amount: 16
-        slot: 4
-
-  spawners:
-    display-name: "&5Spawners"
-    icon: SPAWNER
-    slot: 22
-    items:
-      zombie_egg:
-        display-name: "&5Zombie Spawn Egg"
-        material: ZOMBIE_SPAWN_EGG
+        slot: 8
+      golden_apple:
+        display-name: "&6&lЗолотое яблоко"
+        material: GOLDEN_APPLE
+        buy-price: 500.0
+        sell-price: 200.0
+        default-amount: 1
+        slot: 9
+        lore:
+          - "&7Восстанавливает здоровье"
+          - "&6★ Премиум"
+      enchanted_golden_apple:
+        display-name: "&5&lЗачарованное яблоко"
+        material: ENCHANTED_GOLDEN_APPLE
         buy-price: 5000.0
+        sell-price: 2000.0
+        default-amount: 1
+        slot: 10
+        lore:
+          - "&7Сильнейшее восстановление"
+          - "&5★★ Эпический"
+
+  # ═══════════════════ ИНСТРУМЕНТЫ ═══════════════════
+  tools:
+    display-name: "&e&l✦ Инструменты"
+    icon: DIAMOND_PICKAXE
+    slot: 14
+    items:
+      wooden_pickaxe:
+        display-name: "&6Деревянная кирка"
+        material: WOODEN_PICKAXE
+        buy-price: 30.0
         sell-price: 0
         default-amount: 1
         slot: 0
-        commands:
-          - "give {player} spawner{BlockEntityTag:{SpawnData:{id:zombie}}} {amount}"
-      skeleton_egg:
-        display-name: "&5Skeleton Spawn Egg"
-        material: SKELETON_SPAWN_EGG
-        buy-price: 7500.0
+      stone_pickaxe:
+        display-name: "&7Каменная кирка"
+        material: STONE_PICKAXE
+        buy-price: 60.0
         sell-price: 0
         default-amount: 1
         slot: 1
-        commands:
-          - "give {player} spawner{BlockEntityTag:{SpawnData:{id:skeleton}}} {amount}"
+      iron_pickaxe:
+        display-name: "&fЖелезная кирка"
+        material: IRON_PICKAXE
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 2
+      diamond_pickaxe:
+        display-name: "&bАлмазная кирка"
+        material: DIAMOND_PICKAXE
+        buy-price: 800.0
+        sell-price: 0
+        default-amount: 1
+        slot: 3
+      netherite_pickaxe:
+        display-name: "&8&lНезеритовая кирка"
+        material: NETHERITE_PICKAXE
+        buy-price: 8000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 4
+      iron_axe:
+        display-name: "&fЖелезный топор"
+        material: IRON_AXE
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 5
+      iron_shovel:
+        display-name: "&fЖелезная лопата"
+        material: IRON_SHOVEL
+        buy-price: 100.0
+        sell-price: 0
+        default-amount: 1
+        slot: 6
+      iron_sword:
+        display-name: "&fЖелезный меч"
+        material: IRON_SWORD
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 7
+      diamond_sword:
+        display-name: "&bАлмазный меч"
+        material: DIAMOND_SWORD
+        buy-price: 1000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 8
+      netherite_sword:
+        display-name: "&8&lНезеритовый меч"
+        material: NETHERITE_SWORD
+        buy-price: 10000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 9
+      bow:
+        display-name: "&6Лук"
+        material: BOW
+        buy-price: 150.0
+        sell-price: 0
+        default-amount: 1
+        slot: 10
+      crossbow:
+        display-name: "&6Арбалет"
+        material: CROSSBOW
+        buy-price: 250.0
+        sell-price: 0
+        default-amount: 1
+        slot: 11
+      arrow:
+        display-name: "&fСтрелы"
+        material: ARROW
+        buy-price: 5.0
+        sell-price: 0
+        default-amount: 32
+        slot: 12
+      fishing_rod:
+        display-name: "&6Удочка"
+        material: FISHING_ROD
+        buy-price: 100.0
+        sell-price: 0
+        default-amount: 1
+        slot: 13
+      shears:
+        display-name: "&7Ножницы"
+        material: SHEARS
+        buy-price: 80.0
+        sell-price: 0
+        default-amount: 1
+        slot: 14
+      flint_and_steel:
+        display-name: "&6Огниво"
+        material: FLINT_AND_STEEL
+        buy-price: 60.0
+        sell-price: 0
+        default-amount: 1
+        slot: 15
+
+  # ═══════════════════ БРОНЯ ═══════════════════
+  armor:
+    display-name: "&7&l✦ Броня"
+    icon: DIAMOND_CHESTPLATE
+    slot: 15
+    items:
+      iron_helmet:
+        display-name: "&fЖелезный шлем"
+        material: IRON_HELMET
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 0
+      iron_chestplate:
+        display-name: "&fЖелезный нагрудник"
+        material: IRON_CHESTPLATE
+        buy-price: 400.0
+        sell-price: 0
+        default-amount: 1
+        slot: 1
+      iron_leggings:
+        display-name: "&fЖелезные поножи"
+        material: IRON_LEGGINGS
+        buy-price: 300.0
+        sell-price: 0
+        default-amount: 1
+        slot: 2
+      iron_boots:
+        display-name: "&fЖелезные ботинки"
+        material: IRON_BOOTS
+        buy-price: 150.0
+        sell-price: 0
+        default-amount: 1
+        slot: 3
+      diamond_helmet:
+        display-name: "&bАлмазный шлем"
+        material: DIAMOND_HELMET
+        buy-price: 1500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 4
+      diamond_chestplate:
+        display-name: "&bАлмазный нагрудник"
+        material: DIAMOND_CHESTPLATE
+        buy-price: 2500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 5
+      diamond_leggings:
+        display-name: "&bАлмазные поножи"
+        material: DIAMOND_LEGGINGS
+        buy-price: 2000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 6
+      diamond_boots:
+        display-name: "&bАлмазные ботинки"
+        material: DIAMOND_BOOTS
+        buy-price: 1200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 7
+      netherite_helmet:
+        display-name: "&8&lНезеритовый шлем"
+        material: NETHERITE_HELMET
+        buy-price: 15000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 8
+      netherite_chestplate:
+        display-name: "&8&lНезеритовый нагрудник"
+        material: NETHERITE_CHESTPLATE
+        buy-price: 25000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 9
+      netherite_leggings:
+        display-name: "&8&lНезеритовые поножи"
+        material: NETHERITE_LEGGINGS
+        buy-price: 20000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 10
+      netherite_boots:
+        display-name: "&8&lНезеритовые ботинки"
+        material: NETHERITE_BOOTS
+        buy-price: 12000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 11
+      shield:
+        display-name: "&7Щит"
+        material: SHIELD
+        buy-price: 250.0
+        sell-price: 0
+        default-amount: 1
+        slot: 12
+      elytra:
+        display-name: "&f&lЭлитры"
+        material: ELYTRA
+        buy-price: 100000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 13
+        lore:
+          - "&7Полёт по миру"
+          - "&5★★★ Легендарный"
+
+  # ═══════════════════ РЕДСТОУН ═══════════════════
+  redstone:
+    display-name: "&c&l✦ Редстоун"
+    icon: REDSTONE
+    slot: 16
+    items:
+      redstone_dust:
+        display-name: "&cРедстоун-пыль"
+        material: REDSTONE
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 32
+        slot: 0
+      redstone_block:
+        display-name: "&cБлок редстоуна"
+        material: REDSTONE_BLOCK
+        buy-price: 80.0
+        sell-price: 30.0
+        default-amount: 8
+        slot: 1
+      redstone_torch:
+        display-name: "&cРедстоун-факел"
+        material: REDSTONE_TORCH
+        buy-price: 12.0
+        sell-price: 0
+        default-amount: 16
+        slot: 2
+      repeater:
+        display-name: "&cПовторитель"
+        material: REPEATER
+        buy-price: 50.0
+        sell-price: 0
+        default-amount: 8
+        slot: 3
+      comparator:
+        display-name: "&cКомпаратор"
+        material: COMPARATOR
+        buy-price: 80.0
+        sell-price: 0
+        default-amount: 4
+        slot: 4
+      piston:
+        display-name: "&7Поршень"
+        material: PISTON
+        buy-price: 100.0
+        sell-price: 0
+        default-amount: 4
+        slot: 5
+      sticky_piston:
+        display-name: "&aЛипкий поршень"
+        material: STICKY_PISTON
+        buy-price: 150.0
+        sell-price: 0
+        default-amount: 4
+        slot: 6
+      observer:
+        display-name: "&8Наблюдатель"
+        material: OBSERVER
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 2
+        slot: 7
+      hopper:
+        display-name: "&7Воронка"
+        material: HOPPER
+        buy-price: 250.0
+        sell-price: 0
+        default-amount: 2
+        slot: 8
+      dispenser:
+        display-name: "&7Раздатчик"
+        material: DISPENSER
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 2
+        slot: 9
+      dropper:
+        display-name: "&7Выбрасыватель"
+        material: DROPPER
+        buy-price: 150.0
+        sell-price: 0
+        default-amount: 2
+        slot: 10
+      lever:
+        display-name: "&7Рычаг"
+        material: LEVER
+        buy-price: 10.0
+        sell-price: 0
+        default-amount: 16
+        slot: 11
+      stone_button:
+        display-name: "&7Каменная кнопка"
+        material: STONE_BUTTON
+        buy-price: 10.0
+        sell-price: 0
+        default-amount: 16
+        slot: 12
+      tnt:
+        display-name: "&cДинамит"
+        material: TNT
+        buy-price: 200.0
+        sell-price: 80.0
+        default-amount: 4
+        slot: 13
+      string:
+        display-name: "&fНитка"
+        material: STRING
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 32
+        slot: 14
+
+  # ═══════════════════ ДЕКОР ═══════════════════
+  decoration:
+    display-name: "&d&l✦ Декор"
+    icon: PAINTING
+    slot: 19
+    items:
+      torch:
+        display-name: "&eФакел"
+        material: TORCH
+        buy-price: 5.0
+        sell-price: 0
+        default-amount: 32
+        slot: 0
+      lantern:
+        display-name: "&6Фонарь"
+        material: LANTERN
+        buy-price: 50.0
+        sell-price: 0
+        default-amount: 16
+        slot: 1
+      soul_lantern:
+        display-name: "&bФонарь душ"
+        material: SOUL_LANTERN
+        buy-price: 80.0
+        sell-price: 0
+        default-amount: 16
+        slot: 2
+      flower_pot:
+        display-name: "&6Горшок"
+        material: FLOWER_POT
+        buy-price: 20.0
+        sell-price: 0
+        default-amount: 8
+        slot: 3
+      painting:
+        display-name: "&dКартина"
+        material: PAINTING
+        buy-price: 30.0
+        sell-price: 0
+        default-amount: 4
+        slot: 4
+      item_frame:
+        display-name: "&6Рамка"
+        material: ITEM_FRAME
+        buy-price: 25.0
+        sell-price: 0
+        default-amount: 8
+        slot: 5
+      armor_stand:
+        display-name: "&fСтойка для брони"
+        material: ARMOR_STAND
+        buy-price: 60.0
+        sell-price: 0
+        default-amount: 4
+        slot: 6
+      jukebox:
+        display-name: "&6Джукбокс"
+        material: JUKEBOX
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 7
+      note_block:
+        display-name: "&aНот-блок"
+        material: NOTE_BLOCK
+        buy-price: 80.0
+        sell-price: 0
+        default-amount: 4
+        slot: 8
+      sea_lantern:
+        display-name: "&bМорской фонарь"
+        material: SEA_LANTERN
+        buy-price: 100.0
+        sell-price: 40.0
+        default-amount: 8
+        slot: 9
+      end_rod:
+        display-name: "&fСтержень края"
+        material: END_ROD
+        buy-price: 60.0
+        sell-price: 0
+        default-amount: 16
+        slot: 10
+      candle:
+        display-name: "&fСвеча"
+        material: CANDLE
+        buy-price: 20.0
+        sell-price: 0
+        default-amount: 16
+        slot: 11
+      white_wool:
+        display-name: "&fБелая шерсть"
+        material: WHITE_WOOL
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 32
+        slot: 12
+      red_wool:
+        display-name: "&cКрасная шерсть"
+        material: RED_WOOL
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 32
+        slot: 13
+      blue_wool:
+        display-name: "&9Синяя шерсть"
+        material: BLUE_WOOL
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 32
+        slot: 14
+      green_wool:
+        display-name: "&aЗелёная шерсть"
+        material: GREEN_WOOL
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 32
+        slot: 15
+      yellow_wool:
+        display-name: "&eЖёлтая шерсть"
+        material: YELLOW_WOOL
+        buy-price: 10.0
+        sell-price: 4.0
+        default-amount: 32
+        slot: 16
+
+  # ═══════════════════ АЛХИМИЯ ═══════════════════
+  brewing:
+    display-name: "&5&l✦ Алхимия"
+    icon: BREWING_STAND
+    slot: 20
+    items:
+      brewing_stand:
+        display-name: "&5Варочная стойка"
+        material: BREWING_STAND
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 0
+      cauldron:
+        display-name: "&7Котёл"
+        material: CAULDRON
+        buy-price: 100.0
+        sell-price: 0
+        default-amount: 1
+        slot: 1
+      glass_bottle:
+        display-name: "&fСтеклянная бутылка"
+        material: GLASS_BOTTLE
+        buy-price: 15.0
+        sell-price: 5.0
+        default-amount: 8
+        slot: 2
+      blaze_powder:
+        display-name: "&6Порошок ифрита"
+        material: BLAZE_POWDER
+        buy-price: 50.0
+        sell-price: 20.0
+        default-amount: 8
+        slot: 3
+      blaze_rod:
+        display-name: "&6Огненный жезл"
+        material: BLAZE_ROD
+        buy-price: 100.0
+        sell-price: 40.0
+        default-amount: 4
+        slot: 4
+      ghast_tear:
+        display-name: "&fСлеза гаста"
+        material: GHAST_TEAR
+        buy-price: 200.0
+        sell-price: 80.0
+        default-amount: 2
+        slot: 5
+      ender_pearl:
+        display-name: "&5Эндер-жемчуг"
+        material: ENDER_PEARL
+        buy-price: 80.0
+        sell-price: 30.0
+        default-amount: 8
+        slot: 6
+      ender_eye:
+        display-name: "&5Око эндера"
+        material: ENDER_EYE
+        buy-price: 200.0
+        sell-price: 80.0
+        default-amount: 4
+        slot: 7
+      magma_cream:
+        display-name: "&6Магмовый крем"
+        material: MAGMA_CREAM
+        buy-price: 60.0
+        sell-price: 25.0
+        default-amount: 4
+        slot: 8
+      sugar:
+        display-name: "&fСахар"
+        material: SUGAR
+        buy-price: 8.0
+        sell-price: 3.0
+        default-amount: 16
+        slot: 9
+      spider_eye:
+        display-name: "&5Паучий глаз"
+        material: SPIDER_EYE
+        buy-price: 30.0
+        sell-price: 12.0
+        default-amount: 8
+        slot: 10
+      fermented_spider_eye:
+        display-name: "&5Кваш. паучий глаз"
+        material: FERMENTED_SPIDER_EYE
+        buy-price: 80.0
+        sell-price: 30.0
+        default-amount: 4
+        slot: 11
+      glistering_melon_slice:
+        display-name: "&aЗолотой арбуз"
+        material: GLISTERING_MELON_SLICE
+        buy-price: 100.0
+        sell-price: 40.0
+        default-amount: 4
+        slot: 12
+
+  # ═══════════════════ СПАВНЕРЫ ═══════════════════
+  spawners:
+    display-name: "&5&l✦ Спавн-яйца"
+    icon: SPAWNER
+    slot: 21
+    items:
+      cow_egg:
+        display-name: "&6Спавн-яйцо коровы"
+        material: COW_SPAWN_EGG
+        buy-price: 500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 0
+      pig_egg:
+        display-name: "&dСпавн-яйцо свиньи"
+        material: PIG_SPAWN_EGG
+        buy-price: 400.0
+        sell-price: 0
+        default-amount: 1
+        slot: 1
+      sheep_egg:
+        display-name: "&fСпавн-яйцо овцы"
+        material: SHEEP_SPAWN_EGG
+        buy-price: 400.0
+        sell-price: 0
+        default-amount: 1
+        slot: 2
+      chicken_egg:
+        display-name: "&eСпавн-яйцо курицы"
+        material: CHICKEN_SPAWN_EGG
+        buy-price: 300.0
+        sell-price: 0
+        default-amount: 1
+        slot: 3
+      rabbit_egg:
+        display-name: "&fСпавн-яйцо кролика"
+        material: RABBIT_SPAWN_EGG
+        buy-price: 350.0
+        sell-price: 0
+        default-amount: 1
+        slot: 4
+      horse_egg:
+        display-name: "&6Спавн-яйцо лошади"
+        material: HORSE_SPAWN_EGG
+        buy-price: 1500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 5
+      wolf_egg:
+        display-name: "&7Спавн-яйцо волка"
+        material: WOLF_SPAWN_EGG
+        buy-price: 1000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 6
+      cat_egg:
+        display-name: "&dСпавн-яйцо кота"
+        material: CAT_SPAWN_EGG
+        buy-price: 800.0
+        sell-price: 0
+        default-amount: 1
+        slot: 7
+      villager_egg:
+        display-name: "&aСпавн-яйцо торговца"
+        material: VILLAGER_SPAWN_EGG
+        buy-price: 5000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 8
+        lore:
+          - "&7Полезный житель"
+          - "&7для обмена"
+
+  # ═══════════════════ СПЕЦИАЛЬНОЕ ═══════════════════
+  special:
+    display-name: "&6&l✦ Особое"
+    icon: NETHER_STAR
+    slot: 22
+    items:
+      experience_bottle:
+        display-name: "&aБутылочка опыта"
+        material: EXPERIENCE_BOTTLE
+        buy-price: 200.0
+        sell-price: 80.0
+        default-amount: 4
+        slot: 0
+      ender_chest:
+        display-name: "&5Эндер-сундук"
+        material: ENDER_CHEST
+        buy-price: 1500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 1
+        lore:
+          - "&7Личное хранилище"
+      anvil:
+        display-name: "&7Наковальня"
+        material: ANVIL
+        buy-price: 500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 2
+      enchanting_table:
+        display-name: "&5Стол зачарования"
+        material: ENCHANTING_TABLE
+        buy-price: 1000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 3
+      bookshelf:
+        display-name: "&6Книжный шкаф"
+        material: BOOKSHELF
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 4
+      grindstone:
+        display-name: "&7Точильный камень"
+        material: GRINDSTONE
+        buy-price: 300.0
+        sell-price: 0
+        default-amount: 1
+        slot: 5
+      smithing_table:
+        display-name: "&8Кузнечный стол"
+        material: SMITHING_TABLE
+        buy-price: 400.0
+        sell-price: 0
+        default-amount: 1
+        slot: 6
+      stonecutter:
+        display-name: "&7Камнерез"
+        material: STONECUTTER
+        buy-price: 250.0
+        sell-price: 0
+        default-amount: 1
+        slot: 7
+      loom:
+        display-name: "&6Ткацкий станок"
+        material: LOOM
+        buy-price: 200.0
+        sell-price: 0
+        default-amount: 1
+        slot: 8
+      saddle:
+        display-name: "&6Седло"
+        material: SADDLE
+        buy-price: 1000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 9
+      name_tag:
+        display-name: "&fБирка"
+        material: NAME_TAG
+        buy-price: 500.0
+        sell-price: 0
+        default-amount: 1
+        slot: 10
+      lead:
+        display-name: "&6Поводок"
+        material: LEAD
+        buy-price: 100.0
+        sell-price: 0
+        default-amount: 4
+        slot: 11
+      totem_of_undying:
+        display-name: "&e&lТотем бессмертия"
+        material: TOTEM_OF_UNDYING
+        buy-price: 50000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 12
+        lore:
+          - "&7Спасает от смерти"
+          - "&5★★★ Легендарный"
+      heart_of_the_sea:
+        display-name: "&b&lСердце моря"
+        material: HEART_OF_THE_SEA
+        buy-price: 75000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 13
+      nether_star:
+        display-name: "&f&lЗвезда Незера"
+        material: NETHER_STAR
+        buy-price: 100000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 14
+        lore:
+          - "&7Для маяка"
+          - "&5★★★ Легендарный"
+      beacon:
+        display-name: "&b&lМаяк"
+        material: BEACON
+        buy-price: 250000.0
+        sell-price: 0
+        default-amount: 1
+        slot: 15
+        lore:
+          - "&7Дарует усиления"
+          - "&5★★★★ Мифический"

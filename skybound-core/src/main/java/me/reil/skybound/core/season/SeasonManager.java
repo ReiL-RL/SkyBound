@@ -5,6 +5,7 @@ import me.reil.skybound.api.leaderboard.LeaderboardEntry;
 import me.reil.skybound.api.season.Season;
 import me.reil.skybound.api.season.SeasonProvider;
 import me.reil.skybound.api.season.SeasonReward;
+import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.island.IslandManager;
 import me.reil.skybound.core.leaderboard.LeaderboardManager;
 import org.bukkit.Bukkit;
@@ -96,13 +97,16 @@ public final class SeasonManager implements SeasonProvider {
 
         // Announce
         if (config.isAnnounceEnd()) {
-            Bukkit.broadcastMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-            Bukkit.broadcastMessage("§e§lСезон " + currentSeason.getNumber() + " завершён!");
+            broadcastLang("season.end.separator");
+            broadcastLang("season.end.title", "{season}", String.valueOf(currentSeason.getNumber()));
             for (int i = 0; i < Math.min(3, top.size()); i++) {
                 LeaderboardEntry e = top.get(i);
-                Bukkit.broadcastMessage("§7 " + (i + 1) + ". §f" + e.getIslandName() + " §7- §e" + String.format("%.0f", e.getValue()));
+                broadcastLang("season.end.top-entry",
+                        "{rank}", String.valueOf(i + 1),
+                        "{island}", e.getIslandName(),
+                        "{value}", String.format("%.0f", e.getValue()));
             }
-            Bukkit.broadcastMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            broadcastLang("season.end.separator");
         }
 
         // Auto-reset islands if configured
@@ -170,6 +174,12 @@ public final class SeasonManager implements SeasonProvider {
             cfg.save(file);
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save season data: " + e.getMessage());
+        }
+    }
+
+    private void broadcastLang(String key, String... replacements) {
+        if (plugin instanceof SkyBoundPlugin) {
+            Bukkit.broadcastMessage(((SkyBoundPlugin) plugin).getLangManager().get(key, replacements));
         }
     }
 }

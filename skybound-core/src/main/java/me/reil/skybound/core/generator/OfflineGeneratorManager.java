@@ -1,6 +1,7 @@
 package me.reil.skybound.core.generator;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.island.IslandManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -90,11 +91,13 @@ public final class OfflineGeneratorManager {
                 merged.put(item.getType(), (count == null ? 0 : count) + item.getAmount());
             }
 
-            player.sendMessage("\u00a76\u00a7lOffline Generator Rewards:");
+            sendLang(player, "generator.offline-rewards.header");
             for (Map.Entry<Material, Integer> entry : merged.entrySet()) {
                 ItemStack stack = new ItemStack(entry.getKey(), entry.getValue());
                 player.getInventory().addItem(stack);
-                player.sendMessage("\u00a77  +" + entry.getValue() + " " + entry.getKey().name().toLowerCase().replace('_', ' '));
+                sendLang(player, "generator.offline-rewards.entry",
+                        "{amount}", String.valueOf(entry.getValue()),
+                        "{material}", entry.getKey().name().toLowerCase().replace('_', ' '));
             }
         }
 
@@ -121,5 +124,11 @@ public final class OfflineGeneratorManager {
     public void setOfflineTimestamps(Map<String, Long> data) {
         lastAllOffline.clear();
         lastAllOffline.putAll(data);
+    }
+
+    private void sendLang(Player player, String key, String... replacements) {
+        if (plugin instanceof SkyBoundPlugin) {
+            ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
+        }
     }
 }

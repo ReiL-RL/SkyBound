@@ -2,7 +2,6 @@ package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.core.SkyBoundPlugin;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -50,6 +49,7 @@ public final class WarpsMenu extends Menu {
         for (int i = 0; i < 9; i++) inventory.setItem(i, border);
         for (int i = 18; i < 27; i++) inventory.setItem(i, border);
 
+        warpNames.clear();
         Map<String, Location> warps = island.getWarps();
         int slot = 9;
         for (Map.Entry<String, Location> entry : warps.entrySet()) {
@@ -59,7 +59,7 @@ public final class WarpsMenu extends Menu {
             ItemStack item = new ItemStack(Material.ENDER_PEARL);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ChatColor.AQUA + entry.getKey());
+                meta.setDisplayName(lang().get("menu.warps.entry", "{name}", entry.getKey()));
                 List<String> lore = new ArrayList<String>();
                 Location loc = entry.getValue();
                 lore.add(lang().get("menu.warps.location", "{x}", String.valueOf((int) loc.getX()), "{y}", String.valueOf((int) loc.getY()), "{z}", String.valueOf((int) loc.getZ())));
@@ -88,7 +88,7 @@ public final class WarpsMenu extends Menu {
         }
 
         // Back
-        inventory.setItem(22, makeItem(Material.ARROW, lang().get("button.back")));
+        addBackButton(22);
     }
 
     @Override
@@ -104,12 +104,12 @@ public final class WarpsMenu extends Menu {
             // Set warp
             player.closeInventory();
             if (!island.isWithinBounds(player.getLocation())) {
-                player.sendMessage(ChatColor.RED + "You must be on your island to set a warp.");
+                lang().send(player, "warp.not-on-island");
                 return;
             }
             String warpName = "warp_" + (island.getWarps().size() + 1);
             island.setWarp(warpName, player.getLocation());
-            player.sendMessage(ChatColor.GREEN + "Warp set: " + warpName + ". Rename with /is setwarp <name>.");
+            lang().send(player, "warp.set-auto", "{name}", warpName);
             return;
         }
 
@@ -124,12 +124,12 @@ public final class WarpsMenu extends Menu {
             if (loc != null) {
                 player.closeInventory();
                 player.teleport(loc);
-                player.sendMessage(ChatColor.GREEN + "Teleported to warp: " + warpName);
+                lang().send(player, "warp.teleported", "{name}", warpName);
             }
         } else if (event.getClick() == ClickType.RIGHT) {
             // Delete
             island.removeWarp(warpName);
-            player.sendMessage(ChatColor.RED + "Warp deleted: " + warpName);
+            lang().send(player, "warp.removed", "{name}", warpName);
             new WarpsMenu(player, plugin, island).open();
         }
     }

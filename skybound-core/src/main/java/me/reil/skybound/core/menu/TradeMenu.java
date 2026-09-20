@@ -4,7 +4,6 @@ import me.reil.skybound.api.trade.TradeOffer;
 import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.trade.TradeManager;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -30,7 +29,7 @@ public final class TradeMenu extends Menu {
 
     @Override
     public String getTitle() {
-        return ChatColor.DARK_GREEN + "Торговая площадка";
+        return lang().get("menu.trade.title");
     }
 
     @Override
@@ -47,24 +46,24 @@ public final class TradeMenu extends Menu {
         for (int i = 45; i < 54; i++) inventory.setItem(i, border);
 
         // Info item
-        ItemStack info = makeItem(Material.BOOK, ChatColor.GOLD + "Торговая площадка");
+        ItemStack info = makeItem(Material.BOOK, lang().get("menu.trade.info"));
         ItemMeta infoMeta = info.getItemMeta();
         if (infoMeta != null) {
             List<String> lore = new ArrayList<String>();
-            lore.add(ChatColor.GRAY + "Нажмите на предмет чтобы купить.");
-            lore.add(ChatColor.GRAY + "Ваши предложения отмечены зелёным.");
+            lore.add(lang().get("menu.trade.info-lore-buy"));
+            lore.add(lang().get("menu.trade.info-lore-own"));
             infoMeta.setLore(lore);
             info.setItemMeta(infoMeta);
         }
         inventory.setItem(4, info);
 
         // Create offer button
-        ItemStack createBtn = makeItem(Material.LIME_STAINED_GLASS_PANE, ChatColor.GREEN + "Создать предложение");
+        ItemStack createBtn = makeItem(Material.LIME_STAINED_GLASS_PANE, lang().get("menu.trade.create"));
         ItemMeta createMeta = createBtn.getItemMeta();
         if (createMeta != null) {
             List<String> lore = new ArrayList<String>();
-            lore.add(ChatColor.GRAY + "Возьмите предмет в руку и");
-            lore.add(ChatColor.GRAY + "используйте /is trade sell <цена>");
+            lore.add(lang().get("menu.trade.create-lore1"));
+            lore.add(lang().get("menu.trade.create-lore2"));
             createMeta.setLore(lore);
             createBtn.setItemMeta(createMeta);
         }
@@ -85,15 +84,15 @@ public final class TradeMenu extends Menu {
             if (meta != null) {
                 List<String> lore = meta.getLore() != null ? new ArrayList<String>(meta.getLore()) : new ArrayList<String>();
                 lore.add("");
-                lore.add(ChatColor.GOLD + "Цена: " + ChatColor.WHITE + String.format("%.0f", offer.getPrice()) + " монет");
+                lore.add(lang().get("menu.trade.price", "{price}", String.format("%.0f", offer.getPrice())));
                 String sellerName = Bukkit.getOfflinePlayer(offer.getSeller()).getName();
-                lore.add(ChatColor.GRAY + "Продавец: " + (sellerName != null ? sellerName : "???"));
+                lore.add(lang().get("menu.trade.seller", "{seller}", sellerName != null ? sellerName : "???"));
                 if (offer.getSeller().equals(player.getUniqueId())) {
                     lore.add("");
-                    lore.add(ChatColor.RED + "ПКМ — отменить");
+                    lore.add(lang().get("menu.trade.right-cancel"));
                 }
                 lore.add("");
-                lore.add(ChatColor.YELLOW + "ЛКМ — купить");
+                lore.add(lang().get("menu.trade.left-buy"));
                 meta.setLore(lore);
                 display.setItemMeta(meta);
             }
@@ -101,7 +100,7 @@ public final class TradeMenu extends Menu {
         }
 
         // Back button
-        inventory.setItem(45, makeItem(Material.ARROW, ChatColor.WHITE + "Назад"));
+        addBackButton(45);
     }
 
     @Override
@@ -122,28 +121,20 @@ public final class TradeMenu extends Menu {
 
         if (event.isRightClick() && offer.getSeller().equals(player.getUniqueId())) {
             // Cancel own offer
-            boolean cancelled = plugin.getTradeManager().cancelOffer(player, offer.getId());
-            if (cancelled) {
-                player.sendMessage(ChatColor.GREEN + "Предложение отменено. Предмет возвращён.");
-            }
+            TradeManager.TransactionResult result = plugin.getTradeManager().cancelOfferDetailed(player, offer.getId());
+            sendTradeResult(result, false, offer);
             new TradeMenu(player, plugin).open();
             return;
         }
 
         if (event.isLeftClick()) {
-            if (offer.getSeller().equals(player.getUniqueId())) {
-                player.sendMessage(ChatColor.RED + "Нельзя купить свой предмет.");
-                return;
-            }
-            boolean bought = plugin.getTradeManager().acceptOffer(player, offer.getId());
-            if (bought) {
-                player.sendMessage(ChatColor.GREEN + "Покупка успешна!");
+            TradeManager.TransactionResult result = plugin.getTradeManager().acceptOfferDetailed(player, offer.getId());
+            sendTradeResult(result, true, offer);
+            if (result == TradeManager.TransactionResult.SUCCESS) {
                 Player seller = Bukkit.getPlayer(offer.getSeller());
                 if (seller != null) {
-                    seller.sendMessage(ChatColor.GREEN + "Ваш предмет куплен игроком " + player.getName() + "!");
+                    lang().send(seller, "trade.sold-notify", "{player}", player.getName(), "{price}", String.format("%.0f", offer.getPrice()));
                 }
-            } else {
-                player.sendMessage(ChatColor.RED + "Не удалось купить. Недостаточно средств?");
             }
             new TradeMenu(player, plugin).open();
         }
@@ -157,5 +148,31 @@ public final class TradeMenu extends Menu {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private void sendTradeResult(TradeManager.TransactionResult result, boolean buying, TradeOffer offer) {
+        switch (result) {
+            case SUCCESS:
+                lang().send(player, buying ? "trade.buy-success" : "trade.cancel-success");
+                break;
+            case OFFER_NOT_FOUND:
+                lang().send(player, "trade.offer-not-found");
+                break;
+            case OWN_OFFER:
+                lang().send(player, "trade.own-offer");
+                break;
+            case NO_MONEY:
+                lang().send(player, "trade.no-money", "{price}", String.format("%.0f", offer.getPrice()));
+                break;
+            case NO_SPACE:
+                lang().send(player, "trade.no-space");
+                break;
+            case NOT_SELLER:
+                lang().send(player, "trade.not-seller");
+                break;
+            default:
+                lang().send(player, "trade.failed");
+                break;
+        }
     }
 }

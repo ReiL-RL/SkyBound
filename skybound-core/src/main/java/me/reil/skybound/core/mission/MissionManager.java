@@ -7,6 +7,7 @@ import me.reil.skybound.api.mission.Mission;
 import me.reil.skybound.api.mission.MissionProgress;
 import me.reil.skybound.api.mission.MissionProvider;
 import me.reil.skybound.api.mission.MissionType;
+import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.config.CoreConfig;
 import me.reil.skybound.core.economy.VaultEconomyProvider;
 import me.reil.skybound.core.island.IslandManager;
@@ -84,6 +85,7 @@ public final class MissionManager implements MissionProvider {
     /**
      * Track a player action and update all matching mission conditions.
      */
+    @Override
     public void trackAction(UUID playerId, MissionType actionType, String actionTarget, int amount) {
         Island island = islandManager.getPlayerIsland(playerId);
         int islandLevel = island != null ? island.getLevel() : 0;
@@ -142,7 +144,7 @@ public final class MissionManager implements MissionProvider {
 
                 Player player = Bukkit.getPlayer(playerId);
                 if (player != null) {
-                    player.sendMessage("§a§lМиссия выполнена: §e" + mission.getDisplayName());
+                    sendLang(player, "mission.completed", "{name}", mission.getDisplayName());
                     if (island != null) {
                         MissionCompleteEvent event = new MissionCompleteEvent(player, island, mission);
                         Bukkit.getPluginManager().callEvent(event);
@@ -417,6 +419,12 @@ public final class MissionManager implements MissionProvider {
             return Integer.parseInt(str);
         } catch (NumberFormatException e) {
             return def;
+        }
+    }
+
+    private void sendLang(Player player, String key, String... replacements) {
+        if (plugin instanceof SkyBoundPlugin) {
+            ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
         }
     }
 }

@@ -52,6 +52,9 @@ public interface Island {
     /** Island value (calculated from blocks). */
     double getValue();
 
+    /** Add to island value (used by addons that contribute to value, e.g. XP Core deposits). */
+    void addValue(double amount);
+
     /** Island size radius. */
     int getRadius();
     void setRadius(int radius);

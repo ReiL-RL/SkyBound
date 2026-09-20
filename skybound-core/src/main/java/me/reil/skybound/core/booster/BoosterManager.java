@@ -73,6 +73,37 @@ public final class BoosterManager implements BoosterProvider {
             activeBoosters.put(island.getId(), list);
         }
         list.add(active);
+
+        // Log to island journal
+        try {
+            if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+                ((me.reil.skybound.core.SkyBoundPlugin) plugin).getIslandLogManager().log(
+                        island.getId(), buyer.getUniqueId(), buyer.getName(),
+                        me.reil.skybound.core.island.IslandLogEntry.LogAction.BOOSTER_PURCHASE,
+                        boosterId + " (" + (int) booster.getCost() + ")");
+            }
+        } catch (Throwable ignored) {}
+
+        return true;
+    }
+
+    @Override
+    public boolean forceActivate(Island island, String boosterId) {
+        BoosterImpl booster = boosters.get(boosterId);
+        if (booster == null || island == null) {
+            ((org.bukkit.plugin.java.JavaPlugin) org.bukkit.Bukkit.getPluginManager().getPlugin("SkyBound")).getLogger().warning("forceActivate failed: booster=" + boosterId + " found=" + (booster != null) + " island=" + (island != null) + " available=" + boosters.keySet());
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        ActiveBoosterImpl active = new ActiveBoosterImpl(boosterId, now, now + (booster.getDurationSeconds() * 1000L), booster.getMultiplier());
+
+        List<ActiveBoosterImpl> list = activeBoosters.get(island.getId());
+        if (list == null) {
+            list = new ArrayList<ActiveBoosterImpl>();
+            activeBoosters.put(island.getId(), list);
+        }
+        list.add(active);
         return true;
     }
 

@@ -15,6 +15,17 @@ import java.util.UUID;
  */
 public final class IslandImpl implements Island {
 
+    /** XP needed to advance one level. Set globally by SkyBoundPlugin from CoreConfig. */
+    private static int xpPerLevel = 100;
+
+    public static void setXpPerLevel(int xp) {
+        if (xp > 0) xpPerLevel = xp;
+    }
+
+    public static int getXpPerLevelStatic() {
+        return xpPerLevel;
+    }
+
     private final String id;
     private String name;
     private String description;
@@ -94,8 +105,22 @@ public final class IslandImpl implements Island {
 
     @Override
     public void addExperience(long amount) {
-        this.experience += amount;
-        // TODO: Check for level up
+        if (amount == 0) return;
+        this.experience = Math.max(0L, this.experience + amount);
+        // Recompute level based on total XP
+        int newLevel = (int) (this.experience / xpPerLevel) + 1;
+        if (newLevel < 1) newLevel = 1;
+        this.level = newLevel;
+    }
+
+    /**
+     * Set raw XP value (used by tax penalty / admin commands).
+     */
+    public void setExperience(long value) {
+        this.experience = Math.max(0L, value);
+        int newLevel = (int) (this.experience / xpPerLevel) + 1;
+        if (newLevel < 1) newLevel = 1;
+        this.level = newLevel;
     }
 
     @Override
@@ -105,6 +130,12 @@ public final class IslandImpl implements Island {
 
     public void setValue(double value) {
         this.value = value;
+    }
+
+    @Override
+    public void addValue(double amount) {
+        if (amount <= 0) return;
+        this.value += amount;
     }
 
     @Override public int getRadius() { return radius; }

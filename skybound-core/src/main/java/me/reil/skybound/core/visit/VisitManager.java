@@ -2,6 +2,7 @@ package me.reil.skybound.core.visit;
 
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.visit.VisitProvider;
+import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -39,11 +40,11 @@ public final class VisitManager implements VisitProvider {
     @Override
     public void visit(Player player, Island island) {
         if (island.isLocked()) {
-            player.sendMessage("§cЭтот остров закрыт для посещений.");
+            sendLang(player, "visit.locked");
             return;
         }
         player.teleport(island.getHome());
-        player.sendMessage("§aВы посетили остров §e" + island.getName() + "§a!");
+        sendLang(player, "visit.teleported", "{island}", island.getName());
     }
 
     @Override
@@ -159,6 +160,12 @@ public final class VisitManager implements VisitProvider {
             cfg.save(file);
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save visits data: " + e.getMessage());
+        }
+    }
+
+    private void sendLang(Player player, String key, String... replacements) {
+        if (plugin instanceof SkyBoundPlugin) {
+            ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
         }
     }
 }

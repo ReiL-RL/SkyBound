@@ -98,14 +98,7 @@ public final class MemberPermissionsMenu extends Menu {
             inventory.setItem(i, item);
         }
 
-        // Back (slot 49)
-        ItemStack back = new ItemStack(Material.ARROW);
-        ItemMeta backMeta = back.getItemMeta();
-        if (backMeta != null) {
-            backMeta.setDisplayName(ChatColor.RED + "Back");
-            back.setItemMeta(backMeta);
-        }
-        inventory.setItem(49, back);
+        addBackButton(49);
     }
 
     @Override
@@ -164,53 +157,7 @@ public final class MemberPermissionsMenu extends Menu {
     }
 
     private String formatPerm(IslandPermission perm) {
-        switch (perm) {
-            case BLOCK_PLACE: return "\u0421\u0442\u0430\u0432\u0438\u0442\u044c \u0431\u043b\u043e\u043a\u0438";
-            case BLOCK_BREAK: return "\u041b\u043e\u043c\u0430\u0442\u044c \u0431\u043b\u043e\u043a\u0438";
-            case BUCKET_USE: return "\u0412\u0451\u0434\u0440\u0430";
-            case REDSTONE_INTERACT: return "\u0420\u0435\u0434\u0441\u0442\u043e\u0443\u043d";
-            case OPEN_CHEST: return "\u0421\u0443\u043d\u0434\u0443\u043a\u0438";
-            case OPEN_BARREL: return "\u0411\u043e\u0447\u043a\u0438";
-            case OPEN_SHULKER: return "\u0428\u0430\u043b\u043a\u0435\u0440\u044b";
-            case OPEN_FURNACE: return "\u041f\u0435\u0447\u0438";
-            case OPEN_HOPPER: return "\u0412\u043e\u0440\u043e\u043d\u043a\u0438";
-            case OPEN_BREWING: return "\u0417\u0435\u043b\u044c\u0435\u0432\u0430\u0440\u043a\u0430";
-            case OPEN_ANVIL: return "\u041d\u0430\u043a\u043e\u0432\u0430\u043b\u044c\u043d\u044f";
-            case OPEN_ENCHANTING: return "\u0417\u0430\u0447\u0430\u0440\u043e\u0432\u0430\u043d\u0438\u0435";
-            case KILL_ANIMALS: return "\u0423\u0431\u0438\u0432\u0430\u0442\u044c \u0436\u0438\u0432\u043e\u0442\u043d\u044b\u0445";
-            case KILL_MONSTERS: return "\u0423\u0431\u0438\u0432\u0430\u0442\u044c \u043c\u043e\u0431\u043e\u0432";
-            case BREED_ANIMALS: return "\u0420\u0430\u0437\u0432\u0435\u0434\u0435\u043d\u0438\u0435";
-            case SHEAR: return "\u0421\u0442\u0440\u0438\u0436\u043a\u0430";
-            case LEASH: return "\u041f\u043e\u0432\u043e\u0434\u043e\u043a";
-            case RIDE: return "\u0415\u0437\u0434\u0430";
-            case INVITE: return "\u041f\u0440\u0438\u0433\u043b\u0430\u0448\u0430\u0442\u044c";
-            case KICK: return "\u0418\u0441\u043a\u043b\u044e\u0447\u0430\u0442\u044c";
-            case BAN: return "\u0411\u0430\u043d\u0438\u0442\u044c";
-            case PROMOTE: return "\u041f\u043e\u0432\u044b\u0448\u0430\u0442\u044c";
-            case DEMOTE: return "\u041f\u043e\u043d\u0438\u0436\u0430\u0442\u044c";
-            case SET_HOME: return "\u0423\u0441\u0442. \u0434\u043e\u043c";
-            case SET_WARP: return "\u0423\u0441\u0442. \u0432\u0430\u0440\u043f";
-            case DELETE_WARP: return "\u0423\u0434. \u0432\u0430\u0440\u043f";
-            case CHANGE_NAME: return "\u041f\u0435\u0440\u0435\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u0442\u044c";
-            case CHANGE_DESCRIPTION: return "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435";
-            case LOCK_ISLAND: return "\u0417\u0430\u043a\u0440\u044b\u0442\u044c \u043e\u0441\u0442\u0440\u043e\u0432";
-            case CHANGE_BIOME: return "\u0421\u043c\u0435\u043d\u0430 \u0431\u0438\u043e\u043c\u0430";
-            case CHANGE_BORDER: return "\u0413\u0440\u0430\u043d\u0438\u0446\u0430";
-            case CHANGE_SETTINGS: return "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438";
-            case BANK_DEPOSIT: return "\u0412\u043d\u0435\u0441\u0442\u0438 \u0432 \u0431\u0430\u043d\u043a";
-            case BANK_WITHDRAW: return "\u0412\u044b\u0432\u0435\u0441\u0442\u0438 \u0438\u0437 \u0431\u0430\u043d\u043a\u0430";
-            case PURCHASE_UPGRADE: return "\u041a\u0443\u043f\u0438\u0442\u044c \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u0435";
-            case PURCHASE_BOOSTER: return "\u041a\u0443\u043f\u0438\u0442\u044c \u0431\u0443\u0441\u0442\u0435\u0440";
-            case PLACE_GENERATOR: return "\u0421\u0442\u0430\u0432\u0438\u0442\u044c \u0433\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440";
-            case BREAK_GENERATOR: return "\u041b\u043e\u043c\u0430\u0442\u044c \u0433\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440";
-            case UPGRADE_GENERATOR: return "\u0423\u043b\u0443\u0447\u0448\u0438\u0442\u044c \u0433\u0435\u043d.";
-            case PORTAL_USE: return "\u041f\u043e\u0440\u0442\u0430\u043b\u044b";
-            case FLY: return "\u041f\u043e\u043b\u0451\u0442";
-            case TELEPORT_HOME: return "\u0422\u0435\u043b\u0435\u043f\u043e\u0440\u0442 \u0434\u043e\u043c\u043e\u0439";
-            case TELEPORT_WARP: return "\u0422\u0435\u043b\u0435\u043f\u043e\u0440\u0442 \u0432\u0430\u0440\u043f";
-            case ISLAND_REGEN: return "\u041f\u0435\u0440\u0435\u0441\u043e\u0437\u0434\u0430\u043d\u0438\u0435";
-            default: return perm.name();
-        }
+        return lang().get("permission." + perm.name().toLowerCase().replace('_', '-'));
     }
 
     private enum PermState {

@@ -1,5 +1,5 @@
-# SkyBound Missions Configuration
-# Each mission supports multiple conditions with AND/OR logic.
+# SkyBound Missions Configuration — 100+ заданий
+# Используются ВСЕ типы условий движка миссий.
 #
 # Condition types:
 #   BREAK_BLOCK, PLACE_BLOCK, KILL_MOB, CRAFT_ITEM, SMELT_ITEM, BREW_POTION,
@@ -7,14 +7,18 @@
 #   BANK_DEPOSIT, SHOP_BUY, SHOP_SELL, GENERATOR_COLLECT, PICKUP_ITEM, EAT,
 #   WALK_DISTANCE, GAIN_XP, CUSTOM
 #
-# Condition mode: AND (all must be met) or OR (any one is enough)
-# target: material/entity name, or empty "" for any
+# mode: AND (все условия) или OR (любое одно)
+# reset: daily | weekly (для повторяемых заданий)
+# target: материал/моб, "" — любой
 
 missions:
 
-  # === MINING ===
+  # ============================================
+  # === МАЙНИНГ (BREAK_BLOCK)
+  # ============================================
+
   miner_1:
-    display-name: "&eMiner I"
+    display-name: "&eМайнер I"
     category: "mining"
     icon: WOODEN_PICKAXE
     required-level: 1
@@ -38,13 +42,12 @@ missions:
           amount: 5
       commands: []
     lore:
-      - "&7Mine coal and iron ore"
-      - "&7to start your mining career."
+      - "&7Добудь уголь и железо."
 
   miner_2:
-    display-name: "&eMiner II"
+    display-name: "&eМайнер II"
     category: "mining"
-    icon: IRON_PICKAXE
+    icon: STONE_PICKAXE
     required-level: 3
     prerequisites: ["miner_1"]
     repeatable: false
@@ -69,15 +72,41 @@ missions:
           amount: 3
       commands: []
     lore:
-      - "&7Mine precious ores"
-      - "&7to prove your skill."
+      - "&7Добудь железо, золото и лазурит."
 
   miner_3:
-    display-name: "&eMiner III"
+    display-name: "&eМайнер III"
+    category: "mining"
+    icon: IRON_PICKAXE
+    required-level: 5
+    prerequisites: ["miner_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: REDSTONE_ORE
+          amount: 64
+        - type: BREAK_BLOCK
+          target: COPPER_ORE
+          amount: 64
+    rewards:
+      money: 1500.0
+      island-xp: 80
+      items:
+        - material: REDSTONE_BLOCK
+          amount: 4
+      commands: []
+    lore:
+      - "&7Добудь редстоун и медь."
+
+  miner_4:
+    display-name: "&eМайнер IV"
     category: "mining"
     icon: DIAMOND_PICKAXE
     required-level: 8
-    prerequisites: ["miner_2"]
+    prerequisites: ["miner_3"]
     repeatable: false
     time-limit-seconds: 0
     conditions:
@@ -99,46 +128,182 @@ missions:
         - material: DIAMOND_PICKAXE
           amount: 1
       commands:
-        - "say {player} completed Miner III!"
+        - "say {player} стал Мастером Майнинга!"
     lore:
-      - "&7Master the depths."
-      - "&7Mine 1000 blocks total."
+      - "&7Покори глубины Минкрафта."
 
-  daily_miner:
-    display-name: "&6Daily Mining"
+  miner_5:
+    display-name: "&eМайнер V"
     category: "mining"
-    icon: STONE
+    icon: NETHERITE_PICKAXE
+    required-level: 15
+    prerequisites: ["miner_4"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: ANCIENT_DEBRIS
+          amount: 16
+        - type: BREAK_BLOCK
+          target: NETHER_GOLD_ORE
+          amount: 64
+        - type: BREAK_BLOCK
+          target: NETHER_QUARTZ_ORE
+          amount: 128
+    rewards:
+      money: 8000.0
+      island-xp: 300
+      items:
+        - material: NETHERITE_INGOT
+          amount: 2
+      commands: []
+    lore:
+      - "&7Покори ад."
+
+  cobble_collector:
+    display-name: "&7Сборщик булыжника"
+    category: "mining"
+    icon: COBBLESTONE
     required-level: 1
     prerequisites: []
     repeatable: true
-    cooldown-seconds: 86400
+    cooldown-seconds: 3600
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: COBBLESTONE
+          amount: 500
+    rewards:
+      money: 200.0
+      island-xp: 15
+      items: []
+      commands: []
+    lore:
+      - "&7Добудь 500 булыжников."
+      - "&7Повторяемое каждый час."
+
+  stone_master:
+    display-name: "&7Мастер камня"
+    category: "mining"
+    icon: STONE
+    required-level: 2
+    prerequisites: []
+    repeatable: false
     time-limit-seconds: 0
     conditions:
       mode: OR
       list:
         - type: BREAK_BLOCK
-          target: COBBLESTONE
-          amount: 200
-        - type: BREAK_BLOCK
           target: STONE
-          amount: 200
+          amount: 1000
+        - type: BREAK_BLOCK
+          target: GRANITE
+          amount: 1000
         - type: BREAK_BLOCK
           target: ANDESITE
-          amount: 200
+          amount: 1000
+        - type: BREAK_BLOCK
+          target: DIORITE
+          amount: 1000
     rewards:
-      money: 150.0
-      island-xp: 15
-      items: []
+      money: 500.0
+      island-xp: 40
+      items:
+        - material: STONE_BRICKS
+          amount: 64
       commands: []
     lore:
-      - "&7Mine 200 of any stone type."
-      - "&7Repeatable daily."
+      - "&7Добудь 1000 любого камня."
 
-  # === FARMING ===
+  deepslate_diver:
+    display-name: "&8Глубинный шахтёр"
+    category: "mining"
+    icon: DEEPSLATE
+    required-level: 6
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: DEEPSLATE
+          amount: 256
+        - type: BREAK_BLOCK
+          target: DEEPSLATE_DIAMOND_ORE
+          amount: 16
+    rewards:
+      money: 2000.0
+      island-xp: 100
+      items:
+        - material: DIAMOND
+          amount: 8
+      commands: []
+    lore:
+      - "&7Добывай в глубинах -50 и ниже."
+
+  obsidian_miner:
+    display-name: "&5Обсидиановый магнат"
+    category: "mining"
+    icon: OBSIDIAN
+    required-level: 7
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: OBSIDIAN
+          amount: 32
+    rewards:
+      money: 1500.0
+      island-xp: 80
+      items:
+        - material: OBSIDIAN
+          amount: 32
+      commands: []
+    lore:
+      - "&7Добудь 32 обсидиана."
+
+  speed_miner:
+    display-name: "&c&lСкоростной майнер"
+    category: "mining"
+    icon: TNT
+    required-level: 5
+    prerequisites: ["miner_2"]
+    repeatable: true
+    cooldown-seconds: 7200
+    time-limit-seconds: 600
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: ""
+          amount: 500
+    rewards:
+      money: 2000.0
+      island-xp: 100
+      items:
+        - material: DIAMOND
+          amount: 5
+      commands: []
+    lore:
+      - "&7Сломай 500 блоков за 10 минут!"
+      - "&c&lВРЕМЕННОЕ ИСПЫТАНИЕ"
+
+  # ============================================
+  # === ФАРМЕРСТВО (HARVEST)
+  # ============================================
+
   farmer_1:
-    display-name: "&aFarmer I"
+    display-name: "&aФермер I"
     category: "farming"
-    icon: WHEAT
+    icon: WHEAT_SEEDS
     required-level: 1
     prerequisites: []
     repeatable: false
@@ -163,13 +328,13 @@ missions:
           amount: 16
       commands: []
     lore:
-      - "&7Harvest 64 of any crop."
+      - "&7Собери 64 единицы урожая."
 
   farmer_2:
-    display-name: "&aFarmer II"
+    display-name: "&aФермер II"
     category: "farming"
-    icon: GOLDEN_HOE
-    required-level: 5
+    icon: WHEAT
+    required-level: 3
     prerequisites: ["farmer_1"]
     repeatable: false
     time-limit-seconds: 0
@@ -182,23 +347,103 @@ missions:
         - type: HARVEST
           target: SUGAR_CANE
           amount: 128
+    rewards:
+      money: 600.0
+      island-xp: 50
+      items:
+        - material: HAY_BLOCK
+          amount: 16
+      commands: []
+    lore:
+      - "&7Стань настоящим фермером."
+
+  farmer_3:
+    display-name: "&aФермер III"
+    category: "farming"
+    icon: GOLDEN_HOE
+    required-level: 6
+    prerequisites: ["farmer_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: HARVEST
+          target: WHEAT
+          amount: 512
+        - type: HARVEST
+          target: PUMPKIN
+          amount: 64
+        - type: HARVEST
+          target: MELON
+          amount: 64
         - type: BREED
           target: ""
           amount: 20
     rewards:
-      money: 1000.0
-      island-xp: 80
+      money: 2000.0
+      island-xp: 120
       items:
         - material: GOLDEN_APPLE
-          amount: 3
+          amount: 5
       commands: []
     lore:
-      - "&7Become a master farmer."
-      - "&7Grow crops and breed animals."
+      - "&7Мастер фермерства."
 
-  # === COMBAT ===
+  beetroot_master:
+    display-name: "&cСвекловод"
+    category: "farming"
+    icon: BEETROOT
+    required-level: 4
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: HARVEST
+          target: BEETROOTS
+          amount: 200
+    rewards:
+      money: 500.0
+      island-xp: 40
+      items:
+        - material: BEETROOT_SOUP
+          amount: 8
+      commands: []
+    lore:
+      - "&7Собери 200 свёклы."
+
+  cocoa_farmer:
+    display-name: "&6Какао-фермер"
+    category: "farming"
+    icon: COCOA_BEANS
+    required-level: 5
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: HARVEST
+          target: COCOA
+          amount: 128
+    rewards:
+      money: 800.0
+      island-xp: 60
+      items:
+        - material: COOKIE
+          amount: 32
+      commands: []
+    lore:
+      - "&7Собирай какао-бобы."
+
+  # ============================================
+  # === БОЙ (KILL_MOB)
+  # ============================================
+
   hunter_1:
-    display-name: "&cHunter I"
+    display-name: "&cОхотник I"
     category: "combat"
     icon: WOODEN_SWORD
     required-level: 1
@@ -225,10 +470,10 @@ missions:
           amount: 1
       commands: []
     lore:
-      - "&7Slay the undead."
+      - "&7Уничтожь нежить."
 
   hunter_2:
-    display-name: "&cHunter II"
+    display-name: "&cОхотник II"
     category: "combat"
     icon: IRON_SWORD
     required-level: 5
@@ -255,11 +500,10 @@ missions:
           amount: 1
       commands: []
     lore:
-      - "&7Hunt dangerous mobs."
-      - "&7Kill 200 mobs total."
+      - "&7Опасные мобы — твоя добыча."
 
   hunter_3:
-    display-name: "&cHunter III"
+    display-name: "&cОхотник III"
     category: "combat"
     icon: DIAMOND_SWORD
     required-level: 12
@@ -285,19 +529,227 @@ missions:
         - material: NETHER_STAR
           amount: 1
       commands:
-        - "say {player} is a master hunter!"
+        - "say {player} - мастер охоты!"
     lore:
-      - "&7Conquer the Nether."
+      - "&7Покори Незер."
 
-  # === FISHING ===
+  hunter_4:
+    display-name: "&cОхотник IV"
+    category: "combat"
+    icon: NETHERITE_SWORD
+    required-level: 18
+    prerequisites: ["hunter_3"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: ENDERMAN
+          amount: 64
+        - type: KILL_MOB
+          target: SHULKER
+          amount: 16
+        - type: KILL_MOB
+          target: ENDERMITE
+          amount: 32
+    rewards:
+      money: 10000.0
+      island-xp: 400
+      items:
+        - material: ELYTRA
+          amount: 1
+        - material: ENDER_PEARL
+          amount: 16
+      commands: []
+    lore:
+      - "&7Покори Эндер."
+
+  ender_dragon_slayer:
+    display-name: "&5&lУбийца Дракона"
+    category: "combat"
+    icon: DRAGON_HEAD
+    required-level: 20
+    prerequisites: ["hunter_4"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: ENDER_DRAGON
+          amount: 1
+    rewards:
+      money: 50000.0
+      island-xp: 1000
+      items:
+        - material: DRAGON_EGG
+          amount: 1
+      commands:
+        - "broadcast &5&l{player} победил Дракона!"
+    lore:
+      - "&5&lЛегендарное задание."
+
+  wither_slayer:
+    display-name: "&8&lУбийца Иссушителя"
+    category: "combat"
+    icon: WITHER_SKELETON_SKULL
+    required-level: 17
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: WITHER
+          amount: 1
+    rewards:
+      money: 25000.0
+      island-xp: 600
+      items:
+        - material: NETHER_STAR
+          amount: 3
+      commands: []
+    lore:
+      - "&8&lЭпическое задание."
+
+  warden_hunter:
+    display-name: "&3&lОхотник на Хранителя"
+    category: "combat"
+    icon: SCULK_SHRIEKER
+    required-level: 22
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: WARDEN
+          amount: 1
+    rewards:
+      money: 100000.0
+      island-xp: 2000
+      items:
+        - material: ECHO_SHARD
+          amount: 16
+      commands: []
+    lore:
+      - "&3&lСамый опасный моб."
+
+  zombie_killer:
+    display-name: "&2Истребитель зомби"
+    category: "combat"
+    icon: ROTTEN_FLESH
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 14400
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: ZOMBIE
+          amount: 100
+    rewards:
+      money: 300.0
+      island-xp: 25
+      items: []
+      commands: []
+    lore:
+      - "&7Убей 100 зомби."
+
+  spider_exterminator:
+    display-name: "&8Уничтожитель пауков"
+    category: "combat"
+    icon: SPIDER_EYE
+    required-level: 2
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: SPIDER
+          amount: 50
+        - type: KILL_MOB
+          target: CAVE_SPIDER
+          amount: 30
+    rewards:
+      money: 600.0
+      island-xp: 45
+      items:
+        - material: STRING
+          amount: 64
+      commands: []
+    lore:
+      - "&7Уничтожь всех пауков."
+
+  ghast_hunter:
+    display-name: "&fОхотник на Гастов"
+    category: "combat"
+    icon: GHAST_TEAR
+    required-level: 10
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: GHAST
+          amount: 10
+    rewards:
+      money: 2000.0
+      island-xp: 100
+      items:
+        - material: GHAST_TEAR
+          amount: 5
+      commands: []
+    lore:
+      - "&7Сразись с Гастами в Незере."
+
+  guardian_slayer:
+    display-name: "&bОхотник Стражей"
+    category: "combat"
+    icon: PRISMARINE_SHARD
+    required-level: 12
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: GUARDIAN
+          amount: 30
+        - type: KILL_MOB
+          target: ELDER_GUARDIAN
+          amount: 1
+    rewards:
+      money: 5000.0
+      island-xp: 250
+      items:
+        - material: HEART_OF_THE_SEA
+          amount: 1
+      commands: []
+    lore:
+      - "&7Покори океаны."
+
+  # ============================================
+  # === РЫБАЛКА (FISH)
+  # ============================================
+
   fisherman_1:
-    display-name: "&9Fisherman I"
+    display-name: "&9Рыбак I"
     category: "fishing"
     icon: FISHING_ROD
     required-level: 1
     prerequisites: []
-    repeatable: true
-    cooldown-seconds: 43200
+    repeatable: false
     time-limit-seconds: 0
     conditions:
       mode: AND
@@ -311,12 +763,87 @@ missions:
       items: []
       commands: []
     lore:
-      - "&7Catch 30 fish."
-      - "&7Repeatable every 12 hours."
+      - "&7Поймай 30 рыб."
 
-  # === CRAFTING ===
+  fisherman_2:
+    display-name: "&9Рыбак II"
+    category: "fishing"
+    icon: COD
+    required-level: 4
+    prerequisites: ["fisherman_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: FISH
+          target: ""
+          amount: 200
+    rewards:
+      money: 1000.0
+      island-xp: 70
+      items:
+        - material: ENCHANTED_BOOK
+          amount: 1
+      commands: []
+    lore:
+      - "&7Поймай 200 рыб."
+
+  fisherman_3:
+    display-name: "&9Рыбак III"
+    category: "fishing"
+    icon: TROPICAL_FISH
+    required-level: 10
+    prerequisites: ["fisherman_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: FISH
+          target: ""
+          amount: 1000
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items:
+        - material: TRIDENT
+          amount: 1
+      commands: []
+    lore:
+      - "&7Стань мастером рыбалки."
+
+  daily_fish:
+    display-name: "&eРыба дня"
+    category: "fishing"
+    icon: SALMON
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: FISH
+          target: ""
+          amount: 20
+    rewards:
+      money: 300.0
+      island-xp: 20
+      items: []
+      commands: []
+    lore:
+      - "&7Поймай 20 рыб."
+      - "&eОбновляется ежедневно."
+
+  # ============================================
+  # === КРАФТ И ПЛАВКА (CRAFT_ITEM, SMELT_ITEM)
+  # ============================================
+
   crafter_1:
-    display-name: "&dCrafter I"
+    display-name: "&dРемесленник I"
     category: "crafting"
     icon: CRAFTING_TABLE
     required-level: 2
@@ -340,11 +867,616 @@ missions:
           amount: 1
       commands: []
     lore:
-      - "&7Craft and smelt iron."
+      - "&7Создай и переплавь железо."
 
-  # === ECONOMY ===
+  crafter_2:
+    display-name: "&dРемесленник II"
+    category: "crafting"
+    icon: ANVIL
+    required-level: 6
+    prerequisites: ["crafter_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: CRAFT_ITEM
+          target: DIAMOND_PICKAXE
+          amount: 1
+        - type: CRAFT_ITEM
+          target: DIAMOND_SWORD
+          amount: 1
+        - type: CRAFT_ITEM
+          target: DIAMOND_HELMET
+          amount: 1
+        - type: CRAFT_ITEM
+          target: DIAMOND_CHESTPLATE
+          amount: 1
+    rewards:
+      money: 2000.0
+      island-xp: 100
+      items:
+        - material: ENCHANTING_TABLE
+          amount: 1
+      commands: []
+    lore:
+      - "&7Создай полный комплект алмазного снаряжения."
+
+  smelter:
+    display-name: "&6Плавильщик"
+    category: "crafting"
+    icon: FURNACE
+    required-level: 3
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SMELT_ITEM
+          target: ""
+          amount: 500
+    rewards:
+      money: 800.0
+      island-xp: 60
+      items:
+        - material: BLAST_FURNACE
+          amount: 1
+      commands: []
+    lore:
+      - "&7Переплавь 500 предметов."
+
+  glass_maker:
+    display-name: "&bСтекольщик"
+    category: "crafting"
+    icon: GLASS
+    required-level: 2
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SMELT_ITEM
+          target: GLASS
+          amount: 256
+    rewards:
+      money: 600.0
+      island-xp: 40
+      items:
+        - material: TINTED_GLASS
+          amount: 32
+      commands: []
+    lore:
+      - "&7Сделай 256 стекла."
+
+  bread_baker:
+    display-name: "&6Пекарь"
+    category: "crafting"
+    icon: BREAD
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 7200
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: CRAFT_ITEM
+          target: BREAD
+          amount: 64
+    rewards:
+      money: 200.0
+      island-xp: 15
+      items: []
+      commands: []
+    lore:
+      - "&7Испеки 64 хлеба."
+
+  weapon_smith:
+    display-name: "&cОружейник"
+    category: "crafting"
+    icon: NETHERITE_SWORD
+    required-level: 14
+    prerequisites: ["crafter_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: CRAFT_ITEM
+          target: NETHERITE_SWORD
+          amount: 1
+        - type: CRAFT_ITEM
+          target: NETHERITE_AXE
+          amount: 1
+    rewards:
+      money: 8000.0
+      island-xp: 300
+      items:
+        - material: NETHERITE_INGOT
+          amount: 4
+      commands: []
+    lore:
+      - "&7Создай незеритовое оружие."
+
+  armor_smith:
+    display-name: "&fБронник"
+    category: "crafting"
+    icon: NETHERITE_CHESTPLATE
+    required-level: 16
+    prerequisites: ["crafter_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: CRAFT_ITEM
+          target: NETHERITE_HELMET
+          amount: 1
+        - type: CRAFT_ITEM
+          target: NETHERITE_CHESTPLATE
+          amount: 1
+        - type: CRAFT_ITEM
+          target: NETHERITE_LEGGINGS
+          amount: 1
+        - type: CRAFT_ITEM
+          target: NETHERITE_BOOTS
+          amount: 1
+    rewards:
+      money: 15000.0
+      island-xp: 500
+      items:
+        - material: NETHERITE_BLOCK
+          amount: 2
+      commands: []
+    lore:
+      - "&7Создай полный комплект незеритовой брони."
+
+
+  # ============================================
+  # === ЗЕЛЬЯ И ЧАРЫ (BREW_POTION, ENCHANT_ITEM)
+  # ============================================
+
+  alchemist_1:
+    display-name: "&5Алхимик I"
+    category: "alchemy"
+    icon: BREWING_STAND
+    required-level: 5
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREW_POTION
+          target: ""
+          amount: 10
+    rewards:
+      money: 800.0
+      island-xp: 50
+      items:
+        - material: BREWING_STAND
+          amount: 1
+        - material: BLAZE_POWDER
+          amount: 8
+      commands: []
+    lore:
+      - "&7Свари 10 зелий."
+
+  alchemist_2:
+    display-name: "&5Алхимик II"
+    category: "alchemy"
+    icon: SPLASH_POTION
+    required-level: 10
+    prerequisites: ["alchemist_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREW_POTION
+          target: ""
+          amount: 50
+    rewards:
+      money: 3000.0
+      island-xp: 150
+      items:
+        - material: GHAST_TEAR
+          amount: 4
+      commands: []
+    lore:
+      - "&7Стань мастером алхимии."
+
+  enchanter_1:
+    display-name: "&dЧародей I"
+    category: "alchemy"
+    icon: ENCHANTING_TABLE
+    required-level: 4
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ENCHANT_ITEM
+          target: ""
+          amount: 10
+    rewards:
+      money: 1000.0
+      island-xp: 60
+      items:
+        - material: BOOKSHELF
+          amount: 8
+      commands: []
+    lore:
+      - "&7Зачаруй 10 предметов."
+
+  enchanter_2:
+    display-name: "&dЧародей II"
+    category: "alchemy"
+    icon: ENCHANTED_BOOK
+    required-level: 12
+    prerequisites: ["enchanter_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ENCHANT_ITEM
+          target: ""
+          amount: 50
+    rewards:
+      money: 5000.0
+      island-xp: 250
+      items:
+        - material: ENCHANTED_BOOK
+          amount: 5
+      commands: []
+    lore:
+      - "&7Магия — твоя стихия."
+
+  # ============================================
+  # === СТРИЖКА И РАЗВЕДЕНИЕ (SHEAR, BREED)
+  # ============================================
+
+  shepherd_1:
+    display-name: "&fПастух I"
+    category: "animals"
+    icon: SHEARS
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SHEAR
+          target: ""
+          amount: 30
+    rewards:
+      money: 300.0
+      island-xp: 25
+      items:
+        - material: WHITE_WOOL
+          amount: 32
+      commands: []
+    lore:
+      - "&7Подстриги 30 овец."
+
+  shepherd_2:
+    display-name: "&fПастух II"
+    category: "animals"
+    icon: WHITE_WOOL
+    required-level: 5
+    prerequisites: ["shepherd_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SHEAR
+          target: ""
+          amount: 200
+    rewards:
+      money: 1500.0
+      island-xp: 100
+      items:
+        - material: SHEARS
+          amount: 1
+      commands: []
+    lore:
+      - "&7Стань мастером стрижки."
+
+  breeder_1:
+    display-name: "&aЗаводчик I"
+    category: "animals"
+    icon: WHEAT
+    required-level: 2
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREED
+          target: ""
+          amount: 20
+    rewards:
+      money: 500.0
+      island-xp: 40
+      items:
+        - material: WHEAT
+          amount: 64
+      commands: []
+    lore:
+      - "&7Размножь 20 животных."
+
+  breeder_2:
+    display-name: "&aЗаводчик II"
+    category: "animals"
+    icon: HAY_BLOCK
+    required-level: 8
+    prerequisites: ["breeder_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREED
+          target: COW
+          amount: 30
+        - type: BREED
+          target: PIG
+          amount: 30
+        - type: BREED
+          target: SHEEP
+          amount: 30
+        - type: BREED
+          target: CHICKEN
+          amount: 30
+    rewards:
+      money: 2500.0
+      island-xp: 150
+      items:
+        - material: GOLDEN_APPLE
+          amount: 5
+      commands: []
+    lore:
+      - "&7Зоопарк на острове."
+
+  tamer_1:
+    display-name: "&6Укротитель I"
+    category: "animals"
+    icon: BONE
+    required-level: 3
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: TAME
+          target: WOLF
+          amount: 3
+        - type: TAME
+          target: CAT
+          amount: 2
+    rewards:
+      money: 600.0
+      island-xp: 45
+      items:
+        - material: BONE
+          amount: 32
+      commands: []
+    lore:
+      - "&7Приручи волков и котов."
+
+  tamer_2:
+    display-name: "&6Укротитель II"
+    category: "animals"
+    icon: SADDLE
+    required-level: 8
+    prerequisites: ["tamer_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: TAME
+          target: HORSE
+          amount: 3
+        - type: TAME
+          target: PARROT
+          amount: 2
+    rewards:
+      money: 2000.0
+      island-xp: 120
+      items:
+        - material: SADDLE
+          amount: 2
+      commands: []
+    lore:
+      - "&7Приручи лошадей и попугаев."
+
+  # ============================================
+  # === ОСТРОВНЫЕ УРОВНИ (ISLAND_LEVEL, ISLAND_VALUE)
+  # ============================================
+
+  level_5:
+    display-name: "&aОстровитянин"
+    category: "island"
+    icon: GRASS_BLOCK
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 5
+    rewards:
+      money: 1000.0
+      island-xp: 100
+      items: []
+      commands: []
+    lore:
+      - "&7Достигни 5 уровня острова."
+
+  level_10:
+    display-name: "&2Опытный островитянин"
+    category: "island"
+    icon: DIRT
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 10
+    rewards:
+      money: 3000.0
+      island-xp: 200
+      items:
+        - material: DIAMOND
+          amount: 5
+      commands: []
+    lore:
+      - "&7Достигни 10 уровня острова."
+
+  level_25:
+    display-name: "&6Хозяин острова"
+    category: "island"
+    icon: GOLD_BLOCK
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 25
+    rewards:
+      money: 10000.0
+      island-xp: 500
+      items:
+        - material: BEACON
+          amount: 1
+      commands: []
+    lore:
+      - "&7Достигни 25 уровня острова."
+
+  level_50:
+    display-name: "&5&lЛегенда острова"
+    category: "island"
+    icon: DIAMOND_BLOCK
+    required-level: 1
+    prerequisites: ["level_25"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 50
+    rewards:
+      money: 50000.0
+      island-xp: 2000
+      items:
+        - material: NETHERITE_BLOCK
+          amount: 4
+      commands:
+        - "broadcast &5&l{player} достиг 50 уровня острова!"
+    lore:
+      - "&5&lЛегендарное достижение."
+
+  level_100:
+    display-name: "&6&lМИФ ОСТРОВА"
+    category: "island"
+    icon: NETHER_STAR
+    required-level: 1
+    prerequisites: ["level_50"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 100
+    rewards:
+      money: 250000.0
+      island-xp: 10000
+      items:
+        - material: DRAGON_EGG
+          amount: 1
+      commands:
+        - "broadcast &6&l{player} стал МИФОМ!"
+    lore:
+      - "&6&lСамое сложное достижение."
+
+  rich_island_1:
+    display-name: "&eБогатый остров I"
+    category: "island"
+    icon: GOLD_INGOT
+    required-level: 5
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_VALUE
+          target: ""
+          amount: 100000
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items:
+        - material: GOLD_BLOCK
+          amount: 8
+      commands: []
+    lore:
+      - "&7Достигни стоимости острова 100k."
+
+  rich_island_2:
+    display-name: "&eБогатый остров II"
+    category: "island"
+    icon: GOLD_BLOCK
+    required-level: 10
+    prerequisites: ["rich_island_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_VALUE
+          target: ""
+          amount: 1000000
+    rewards:
+      money: 50000.0
+      island-xp: 1000
+      items:
+        - material: DIAMOND_BLOCK
+          amount: 8
+      commands: []
+    lore:
+      - "&7Достигни стоимости острова 1M."
+
+  # ============================================
+  # === ЭКОНОМИКА (BANK_DEPOSIT, SHOP_BUY, SHOP_SELL)
+  # ============================================
+
   banker_1:
-    display-name: "&6Banker I"
+    display-name: "&6Банкир I"
     category: "economy"
     icon: GOLD_INGOT
     required-level: 3
@@ -357,48 +1489,688 @@ missions:
         - type: BANK_DEPOSIT
           target: ""
           amount: 5000
-        - type: SHOP_SELL
-          target: ""
-          amount: 50
     rewards:
-      money: 1000.0
-      island-xp: 50
+      money: 500.0
+      island-xp: 30
       items: []
       commands: []
     lore:
-      - "&7Deposit $5000 to bank"
-      - "&7and sell 50 items."
+      - "&7Положи 5000 в банк острова."
 
-  # === TIMED CHALLENGE ===
-  speed_miner:
-    display-name: "&c&lSpeed Miner"
-    category: "mining"
-    icon: TNT
-    required-level: 5
-    prerequisites: ["miner_1"]
-    repeatable: true
-    cooldown-seconds: 7200
-    time-limit-seconds: 600
+  banker_2:
+    display-name: "&6Банкир II"
+    category: "economy"
+    icon: GOLD_BLOCK
+    required-level: 8
+    prerequisites: ["banker_1"]
+    repeatable: false
+    time-limit-seconds: 0
     conditions:
       mode: AND
       list:
-        - type: BREAK_BLOCK
+        - type: BANK_DEPOSIT
+          target: ""
+          amount: 100000
+    rewards:
+      money: 10000.0
+      island-xp: 250
+      items: []
+      commands: []
+    lore:
+      - "&7Положи 100k в банк острова."
+
+  banker_3:
+    display-name: "&6Банкир III"
+    category: "economy"
+    icon: EMERALD_BLOCK
+    required-level: 15
+    prerequisites: ["banker_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BANK_DEPOSIT
+          target: ""
+          amount: 1000000
+    rewards:
+      money: 100000.0
+      island-xp: 1000
+      items: []
+      commands: []
+    lore:
+      - "&7Положи 1M в банк острова."
+
+  shopper_1:
+    display-name: "&aПокупатель I"
+    category: "economy"
+    icon: EMERALD
+    required-level: 2
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SHOP_BUY
+          target: ""
+          amount: 50
+    rewards:
+      money: 300.0
+      island-xp: 25
+      items: []
+      commands: []
+    lore:
+      - "&7Купи 50 предметов в магазине."
+
+  shopper_2:
+    display-name: "&aПокупатель II"
+    category: "economy"
+    icon: EMERALD_BLOCK
+    required-level: 8
+    prerequisites: ["shopper_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SHOP_BUY
           target: ""
           amount: 500
     rewards:
       money: 2000.0
-      island-xp: 100
+      island-xp: 120
       items:
-        - material: DIAMOND
+        - material: EMERALD
+          amount: 32
+      commands: []
+    lore:
+      - "&7Купи 500 предметов в магазине."
+
+  trader_1:
+    display-name: "&2Торговец I"
+    category: "economy"
+    icon: EMERALD
+    required-level: 2
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SHOP_SELL
+          target: ""
+          amount: 100
+    rewards:
+      money: 600.0
+      island-xp: 40
+      items: []
+      commands: []
+    lore:
+      - "&7Продай 100 предметов в магазине."
+
+  trader_2:
+    display-name: "&2Торговец II"
+    category: "economy"
+    icon: GOLD_BLOCK
+    required-level: 10
+    prerequisites: ["trader_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: SHOP_SELL
+          target: ""
+          amount: 5000
+    rewards:
+      money: 8000.0
+      island-xp: 300
+      items:
+        - material: EMERALD_BLOCK
+          amount: 4
+      commands: []
+    lore:
+      - "&7Стань мастером торговли."
+
+  # ============================================
+  # === ГЕНЕРАТОРЫ (GENERATOR_COLLECT)
+  # ============================================
+
+  generator_1:
+    display-name: "&7Сборщик с генераторов I"
+    category: "generator"
+    icon: COBBLESTONE
+    required-level: 2
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: GENERATOR_COLLECT
+          target: ""
+          amount: 1000
+    rewards:
+      money: 800.0
+      island-xp: 50
+      items: []
+      commands: []
+    lore:
+      - "&7Собери 1000 предметов с генераторов."
+
+  generator_2:
+    display-name: "&7Сборщик с генераторов II"
+    category: "generator"
+    icon: IRON_BLOCK
+    required-level: 8
+    prerequisites: ["generator_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: GENERATOR_COLLECT
+          target: ""
+          amount: 10000
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items:
+        - material: HOPPER
+          amount: 8
+      commands: []
+    lore:
+      - "&7Собери 10000 предметов с генераторов."
+
+  generator_3:
+    display-name: "&7Сборщик с генераторов III"
+    category: "generator"
+    icon: DIAMOND_BLOCK
+    required-level: 15
+    prerequisites: ["generator_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: GENERATOR_COLLECT
+          target: ""
+          amount: 100000
+    rewards:
+      money: 50000.0
+      island-xp: 1000
+      items:
+        - material: NETHERITE_INGOT
           amount: 5
       commands: []
     lore:
-      - "&7Mine 500 blocks in 10 minutes!"
-      - "&c&lTIMED CHALLENGE"
+      - "&7Гранд-мастер генераторов."
 
-  # === DAILY MISSIONS ===
+  # ============================================
+  # === КОЛЛЕКЦИОНИРОВАНИЕ (PICKUP_ITEM)
+  # ============================================
+
+  collector_1:
+    display-name: "&dКоллекционер I"
+    category: "collection"
+    icon: BOOK
+    required-level: 4
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PICKUP_ITEM
+          target: DIAMOND
+          amount: 32
+        - type: PICKUP_ITEM
+          target: EMERALD
+          amount: 32
+    rewards:
+      money: 1500.0
+      island-xp: 80
+      items:
+        - material: GOLDEN_APPLE
+          amount: 3
+      commands: []
+    lore:
+      - "&7Подбери драгоценные камни."
+
+  collector_2:
+    display-name: "&dКоллекционер II"
+    category: "collection"
+    icon: NETHER_STAR
+    required-level: 12
+    prerequisites: ["collector_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PICKUP_ITEM
+          target: NETHER_STAR
+          amount: 1
+        - type: PICKUP_ITEM
+          target: DRAGON_EGG
+          amount: 1
+        - type: PICKUP_ITEM
+          target: HEART_OF_THE_SEA
+          amount: 1
+    rewards:
+      money: 25000.0
+      island-xp: 800
+      items:
+        - material: ENCHANTED_GOLDEN_APPLE
+          amount: 3
+      commands: []
+    lore:
+      - "&7Собери самые редкие предметы."
+
+  ender_collector:
+    display-name: "&5Эндер-коллекционер"
+    category: "collection"
+    icon: ENDER_PEARL
+    required-level: 8
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PICKUP_ITEM
+          target: ENDER_PEARL
+          amount: 16
+        - type: PICKUP_ITEM
+          target: BLAZE_ROD
+          amount: 8
+    rewards:
+      money: 3000.0
+      island-xp: 150
+      items:
+        - material: ENDER_EYE
+          amount: 12
+      commands: []
+    lore:
+      - "&7Собери ингредиенты для портала."
+
+  # ============================================
+  # === ЕДА (EAT)
+  # ============================================
+
+  gourmet:
+    display-name: "&6Гурман"
+    category: "food"
+    icon: GOLDEN_APPLE
+    required-level: 3
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: EAT
+          target: ""
+          amount: 50
+    rewards:
+      money: 500.0
+      island-xp: 30
+      items:
+        - material: COOKED_BEEF
+          amount: 32
+      commands: []
+    lore:
+      - "&7Съешь 50 единиц еды."
+
+  steak_lover:
+    display-name: "&cЛюбитель стейков"
+    category: "food"
+    icon: COOKED_BEEF
+    required-level: 2
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 86400
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: EAT
+          target: COOKED_BEEF
+          amount: 32
+    rewards:
+      money: 200.0
+      island-xp: 15
+      items: []
+      commands: []
+    lore:
+      - "&7Съешь 32 стейка."
+
+  golden_apple_eater:
+    display-name: "&6&lЗолотой едок"
+    category: "food"
+    icon: ENCHANTED_GOLDEN_APPLE
+    required-level: 10
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: EAT
+          target: GOLDEN_APPLE
+          amount: 5
+        - type: EAT
+          target: ENCHANTED_GOLDEN_APPLE
+          amount: 1
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items:
+        - material: GOLDEN_CARROT
+          amount: 16
+      commands: []
+    lore:
+      - "&7Попробуй золото."
+
+  # ============================================
+  # === ХОДЬБА (WALK_DISTANCE)
+  # ============================================
+
+  traveler_1:
+    display-name: "&bПутешественник I"
+    category: "exploration"
+    icon: LEATHER_BOOTS
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: WALK_DISTANCE
+          target: ""
+          amount: 5000
+    rewards:
+      money: 300.0
+      island-xp: 25
+      items:
+        - material: IRON_BOOTS
+          amount: 1
+      commands: []
+    lore:
+      - "&7Пройди 5000 блоков."
+
+  traveler_2:
+    display-name: "&bПутешественник II"
+    category: "exploration"
+    icon: IRON_BOOTS
+    required-level: 5
+    prerequisites: ["traveler_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: WALK_DISTANCE
+          target: ""
+          amount: 25000
+    rewards:
+      money: 1500.0
+      island-xp: 80
+      items:
+        - material: DIAMOND_BOOTS
+          amount: 1
+      commands: []
+    lore:
+      - "&7Пройди 25000 блоков."
+
+  traveler_3:
+    display-name: "&bПутешественник III"
+    category: "exploration"
+    icon: ELYTRA
+    required-level: 15
+    prerequisites: ["traveler_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: WALK_DISTANCE
+          target: ""
+          amount: 100000
+    rewards:
+      money: 10000.0
+      island-xp: 500
+      items:
+        - material: ELYTRA
+          amount: 1
+      commands: []
+    lore:
+      - "&7Пройди 100000 блоков."
+
+  daily_walk:
+    display-name: "&eЕжедневная прогулка"
+    category: "daily"
+    icon: LEATHER_BOOTS
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: WALK_DISTANCE
+          target: ""
+          amount: 1000
+    rewards:
+      money: 200.0
+      island-xp: 15
+      items: []
+      commands: []
+    lore:
+      - "&7Пройди 1000 блоков."
+      - "&eОбновляется ежедневно."
+
+  # ============================================
+  # === ОПЫТ (GAIN_XP)
+  # ============================================
+
+  xp_grinder_1:
+    display-name: "&aЛовец опыта I"
+    category: "experience"
+    icon: EXPERIENCE_BOTTLE
+    required-level: 3
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: GAIN_XP
+          target: ""
+          amount: 1000
+    rewards:
+      money: 500.0
+      island-xp: 50
+      items:
+        - material: EXPERIENCE_BOTTLE
+          amount: 8
+      commands: []
+    lore:
+      - "&7Получи 1000 опыта."
+
+  xp_grinder_2:
+    display-name: "&aЛовец опыта II"
+    category: "experience"
+    icon: EXPERIENCE_BOTTLE
+    required-level: 10
+    prerequisites: ["xp_grinder_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: GAIN_XP
+          target: ""
+          amount: 10000
+    rewards:
+      money: 5000.0
+      island-xp: 250
+      items:
+        - material: EXPERIENCE_BOTTLE
+          amount: 32
+      commands: []
+    lore:
+      - "&7Получи 10000 опыта."
+
+  # ============================================
+  # === СТРОИТЕЛЬСТВО (PLACE_BLOCK)
+  # ============================================
+
+  builder_1:
+    display-name: "&6Строитель I"
+    category: "building"
+    icon: COBBLESTONE
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PLACE_BLOCK
+          target: COBBLESTONE
+          amount: 100
+    rewards:
+      money: 300.0
+      island-xp: 25
+      items:
+        - material: STONE_BRICKS
+          amount: 32
+      commands: []
+    lore:
+      - "&7Поставь 100 булыжников."
+
+  builder_2:
+    display-name: "&6Строитель II"
+    category: "building"
+    icon: STONE_BRICKS
+    required-level: 5
+    prerequisites: ["builder_1"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PLACE_BLOCK
+          target: STONE_BRICKS
+          amount: 200
+        - type: PLACE_BLOCK
+          target: OAK_LOG
+          amount: 100
+    rewards:
+      money: 1000.0
+      island-xp: 60
+      items:
+        - material: OAK_PLANKS
+          amount: 64
+      commands: []
+    lore:
+      - "&7Постройте основу для дома."
+
+  builder_3:
+    display-name: "&6Строитель III"
+    category: "building"
+    icon: QUARTZ_BLOCK
+    required-level: 12
+    prerequisites: ["builder_2"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PLACE_BLOCK
+          target: ""
+          amount: 5000
+    rewards:
+      money: 5000.0
+      island-xp: 250
+      items:
+        - material: QUARTZ_BLOCK
+          amount: 64
+      commands: []
+    lore:
+      - "&7Поставь 5000 любых блоков."
+
+  decorator:
+    display-name: "&dДекоратор"
+    category: "building"
+    icon: FLOWER_POT
+    required-level: 4
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: OR
+      list:
+        - type: PLACE_BLOCK
+          target: FLOWER_POT
+          amount: 16
+        - type: PLACE_BLOCK
+          target: PAINTING
+          amount: 8
+        - type: PLACE_BLOCK
+          target: ITEM_FRAME
+          amount: 16
+    rewards:
+      money: 600.0
+      island-xp: 40
+      items:
+        - material: PAINTING
+          amount: 8
+      commands: []
+    lore:
+      - "&7Укрась свой остров."
+
+  redstone_engineer:
+    display-name: "&cИнженер редстоуна"
+    category: "building"
+    icon: REDSTONE
+    required-level: 6
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: PLACE_BLOCK
+          target: REDSTONE_WIRE
+          amount: 100
+        - type: PLACE_BLOCK
+          target: REPEATER
+          amount: 16
+        - type: PLACE_BLOCK
+          target: PISTON
+          amount: 8
+    rewards:
+      money: 2000.0
+      island-xp: 120
+      items:
+        - material: REDSTONE_BLOCK
+          amount: 16
+      commands: []
+    lore:
+      - "&7Освой редстоун."
+
+  # ============================================
+  # === ЕЖЕДНЕВНЫЕ ЗАДАНИЯ (reset: daily)
+  # ============================================
+
   daily_mine:
-    display-name: "&e☀ Добыча дня"
+    display-name: "&eДобыча дня"
     category: "daily"
     icon: DIAMOND_ORE
     required-level: 1
@@ -419,11 +2191,11 @@ missions:
       items: []
       commands: []
     lore:
-      - "&7Добудьте 5 алмазной руды."
+      - "&7Добудь 5 алмазных руд."
       - "&eОбновляется ежедневно."
 
   daily_kill:
-    display-name: "&e☀ Охотник дня"
+    display-name: "&eОхотник дня"
     category: "daily"
     icon: BONE
     required-level: 1
@@ -444,12 +2216,146 @@ missions:
       items: []
       commands: []
     lore:
-      - "&7Убейте 30 мобов."
+      - "&7Убей 30 мобов."
       - "&eОбновляется ежедневно."
 
-  # === WEEKLY MISSIONS ===
+  daily_farm:
+    display-name: "&eФермер дня"
+    category: "daily"
+    icon: WHEAT
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: OR
+      list:
+        - type: HARVEST
+          target: WHEAT
+          amount: 100
+        - type: HARVEST
+          target: POTATOES
+          amount: 100
+        - type: HARVEST
+          target: CARROTS
+          amount: 100
+    rewards:
+      money: 300.0
+      island-xp: 20
+      items: []
+      commands: []
+    lore:
+      - "&7Собери 100 единиц урожая."
+      - "&eОбновляется ежедневно."
+
+  daily_craft:
+    display-name: "&eРемесленник дня"
+    category: "daily"
+    icon: CRAFTING_TABLE
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: CRAFT_ITEM
+          target: ""
+          amount: 50
+    rewards:
+      money: 250.0
+      island-xp: 20
+      items: []
+      commands: []
+    lore:
+      - "&7Скрафти 50 предметов."
+      - "&eОбновляется ежедневно."
+
+  daily_smelt:
+    display-name: "&eПлавильщик дня"
+    category: "daily"
+    icon: FURNACE
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: SMELT_ITEM
+          target: ""
+          amount: 64
+    rewards:
+      money: 200.0
+      island-xp: 15
+      items: []
+      commands: []
+    lore:
+      - "&7Переплавь 64 предмета."
+      - "&eОбновляется ежедневно."
+
+  daily_sell:
+    display-name: "&eТорговец дня"
+    category: "daily"
+    icon: EMERALD
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: SHOP_SELL
+          target: ""
+          amount: 30
+    rewards:
+      money: 500.0
+      island-xp: 30
+      items: []
+      commands: []
+    lore:
+      - "&7Продай 30 предметов."
+      - "&eОбновляется ежедневно."
+
+  daily_xp:
+    display-name: "&eКопитель опыта"
+    category: "daily"
+    icon: EXPERIENCE_BOTTLE
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: GAIN_XP
+          target: ""
+          amount: 200
+    rewards:
+      money: 300.0
+      island-xp: 20
+      items: []
+      commands: []
+    lore:
+      - "&7Получи 200 опыта."
+      - "&eОбновляется ежедневно."
+
+  # ============================================
+  # === ЕЖЕНЕДЕЛЬНЫЕ ЗАДАНИЯ (reset: weekly)
+  # ============================================
+
   weekly_kill:
-    display-name: "&b☽ Охота недели"
+    display-name: "&bОхота недели"
     category: "weekly"
     icon: ZOMBIE_HEAD
     required-level: 1
@@ -462,19 +2368,21 @@ missions:
       mode: AND
       list:
         - type: KILL_MOB
-          target: ZOMBIE
-          amount: 100
+          target: ""
+          amount: 500
     rewards:
       money: 5000.0
       island-xp: 200
-      items: []
+      items:
+        - material: GOLDEN_APPLE
+          amount: 3
       commands: []
     lore:
-      - "&7Убейте 100 зомби."
+      - "&7Убей 500 мобов."
       - "&bОбновляется еженедельно."
 
   weekly_farm:
-    display-name: "&b☽ Фермер недели"
+    display-name: "&bФермер недели"
     category: "weekly"
     icon: WHEAT
     required-level: 1
@@ -484,17 +2392,148 @@ missions:
     time-limit-seconds: 0
     reset: weekly
     conditions:
-      mode: OR
+      mode: AND
       list:
         - type: HARVEST
-          target: WHEAT
-          amount: 500
-        - type: HARVEST
-          target: POTATOES
-          amount: 500
-        - type: HARVEST
-          target: CARROTS
-          amount: 500
+          target: ""
+          amount: 1000
+    rewards:
+      money: 4000.0
+      island-xp: 180
+      items:
+        - material: HAY_BLOCK
+          amount: 32
+      commands: []
+    lore:
+      - "&7Собери 1000 единиц урожая."
+      - "&bОбновляется еженедельно."
+
+  weekly_mine:
+    display-name: "&bМайнер недели"
+    category: "weekly"
+    icon: DIAMOND_PICKAXE
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: weekly
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: DIAMOND_ORE
+          amount: 50
+        - type: BREAK_BLOCK
+          target: EMERALD_ORE
+          amount: 25
+    rewards:
+      money: 8000.0
+      island-xp: 300
+      items:
+        - material: DIAMOND
+          amount: 10
+      commands: []
+    lore:
+      - "&7Добудь 50 алмазов и 25 изумрудов."
+      - "&bОбновляется еженедельно."
+
+  weekly_fish:
+    display-name: "&bРыбалка недели"
+    category: "weekly"
+    icon: TROPICAL_FISH
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: weekly
+    conditions:
+      mode: AND
+      list:
+        - type: FISH
+          target: ""
+          amount: 200
+    rewards:
+      money: 6000.0
+      island-xp: 250
+      items:
+        - material: FISHING_ROD
+          amount: 1
+      commands: []
+    lore:
+      - "&7Поймай 200 рыб."
+      - "&bОбновляется еженедельно."
+
+  weekly_bank:
+    display-name: "&bБанкир недели"
+    category: "weekly"
+    icon: GOLD_INGOT
+    required-level: 5
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: weekly
+    conditions:
+      mode: AND
+      list:
+        - type: BANK_DEPOSIT
+          target: ""
+          amount: 50000
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items: []
+      commands: []
+    lore:
+      - "&7Положи 50000 в банк."
+      - "&bОбновляется еженедельно."
+
+  weekly_walk:
+    display-name: "&bПутешествие недели"
+    category: "weekly"
+    icon: ELYTRA
+    required-level: 1
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: weekly
+    conditions:
+      mode: AND
+      list:
+        - type: WALK_DISTANCE
+          target: ""
+          amount: 50000
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items: []
+      commands: []
+    lore:
+      - "&7Пройди 50000 блоков."
+      - "&bОбновляется еженедельно."
+
+  # ============================================
+  # === ВРЕМЕННЫЕ ИСПЫТАНИЯ (time-limit-seconds)
+  # ============================================
+
+  speed_killer:
+    display-name: "&c&lСкоростной убийца"
+    category: "challenge"
+    icon: NETHERITE_SWORD
+    required-level: 5
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 7200
+    time-limit-seconds: 300
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: ""
+          amount: 100
     rewards:
       money: 3000.0
       island-xp: 150
@@ -503,5 +2542,219 @@ missions:
           amount: 5
       commands: []
     lore:
-      - "&7Соберите 500 урожая."
-      - "&bОбновляется еженедельно."
+      - "&7Убей 100 мобов за 5 минут!"
+      - "&c&lВРЕМЕННОЕ ИСПЫТАНИЕ"
+
+  speed_farmer:
+    display-name: "&c&lСкоростной фермер"
+    category: "challenge"
+    icon: GOLDEN_HOE
+    required-level: 4
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 7200
+    time-limit-seconds: 600
+    conditions:
+      mode: AND
+      list:
+        - type: HARVEST
+          target: ""
+          amount: 200
+    rewards:
+      money: 1500.0
+      island-xp: 80
+      items:
+        - material: BONE_MEAL
+          amount: 32
+      commands: []
+    lore:
+      - "&7Собери 200 урожая за 10 минут!"
+      - "&c&lВРЕМЕННОЕ ИСПЫТАНИЕ"
+
+  speed_fisher:
+    display-name: "&c&lСкоростной рыбак"
+    category: "challenge"
+    icon: FISHING_ROD
+    required-level: 3
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 7200
+    time-limit-seconds: 900
+    conditions:
+      mode: AND
+      list:
+        - type: FISH
+          target: ""
+          amount: 50
+    rewards:
+      money: 1200.0
+      island-xp: 70
+      items: []
+      commands: []
+    lore:
+      - "&7Поймай 50 рыб за 15 минут!"
+      - "&c&lВРЕМЕННОЕ ИСПЫТАНИЕ"
+
+  marathon:
+    display-name: "&c&lМарафон"
+    category: "challenge"
+    icon: ELYTRA
+    required-level: 8
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 14400
+    time-limit-seconds: 1800
+    conditions:
+      mode: AND
+      list:
+        - type: WALK_DISTANCE
+          target: ""
+          amount: 10000
+    rewards:
+      money: 5000.0
+      island-xp: 200
+      items:
+        - material: ELYTRA
+          amount: 1
+      commands: []
+    lore:
+      - "&7Пройди 10000 блоков за 30 минут!"
+      - "&c&lВРЕМЕННОЕ ИСПЫТАНИЕ"
+
+  # ============================================
+  # === СПЕЦИАЛЬНЫЕ КОМБО-ЗАДАНИЯ
+  # ============================================
+
+  jack_of_all_trades:
+    display-name: "&6Мастер на все руки"
+    category: "special"
+    icon: GOLDEN_APPLE
+    required-level: 10
+    prerequisites: []
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: ""
+          amount: 500
+        - type: PLACE_BLOCK
+          target: ""
+          amount: 500
+        - type: KILL_MOB
+          target: ""
+          amount: 100
+        - type: HARVEST
+          target: ""
+          amount: 100
+        - type: CRAFT_ITEM
+          target: ""
+          amount: 50
+        - type: FISH
+          target: ""
+          amount: 25
+    rewards:
+      money: 10000.0
+      island-xp: 500
+      items:
+        - material: ENCHANTED_GOLDEN_APPLE
+          amount: 3
+      commands: []
+    lore:
+      - "&7Покажи свои навыки во всём."
+
+  achievement_master:
+    display-name: "&6&lМастер достижений"
+    category: "special"
+    icon: NETHER_STAR
+    required-level: 25
+    prerequisites: ["miner_4", "hunter_3", "farmer_3", "crafter_2", "level_25"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 30
+    rewards:
+      money: 100000.0
+      island-xp: 5000
+      items:
+        - material: BEACON
+          amount: 1
+        - material: NETHERITE_BLOCK
+          amount: 1
+      commands:
+        - "broadcast &6&l{player} стал Мастером Достижений!"
+    lore:
+      - "&6&lЛегендарное задание."
+
+  speedrunner:
+    display-name: "&c&lСкоростной игрок"
+    category: "special"
+    icon: CLOCK
+    required-level: 5
+    prerequisites: []
+    repeatable: true
+    cooldown-seconds: 21600
+    time-limit-seconds: 3600
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: ""
+          amount: 1000
+        - type: KILL_MOB
+          target: ""
+          amount: 50
+        - type: CRAFT_ITEM
+          target: ""
+          amount: 25
+    rewards:
+      money: 5000.0
+      island-xp: 250
+      items:
+        - material: GOLDEN_APPLE
+          amount: 5
+      commands: []
+    lore:
+      - "&7Сделай всё за 1 час!"
+      - "&c&lВРЕМЕННОЕ ИСПЫТАНИЕ"
+
+  ultimate_challenge:
+    display-name: "&5&lУЛЬТИМАТИВНЫЙ ВЫЗОВ"
+    category: "special"
+    icon: NETHER_STAR
+    required-level: 30
+    prerequisites: ["achievement_master"]
+    repeatable: false
+    time-limit-seconds: 0
+    conditions:
+      mode: AND
+      list:
+        - type: KILL_MOB
+          target: ENDER_DRAGON
+          amount: 1
+        - type: KILL_MOB
+          target: WITHER
+          amount: 1
+        - type: KILL_MOB
+          target: WARDEN
+          amount: 1
+        - type: ISLAND_LEVEL
+          target: ""
+          amount: 75
+    rewards:
+      money: 500000.0
+      island-xp: 25000
+      items:
+        - material: DRAGON_EGG
+          amount: 1
+        - material: NETHERITE_BLOCK
+          amount: 16
+      commands:
+        - "broadcast &5&l{player} прошёл УЛЬТИМАТИВНЫЙ ВЫЗОВ!"
+    lore:
+      - "&5&lСамое сложное задание сервера."

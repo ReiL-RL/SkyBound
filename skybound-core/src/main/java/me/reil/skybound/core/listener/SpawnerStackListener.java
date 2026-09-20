@@ -1,8 +1,8 @@
 package me.reil.skybound.core.listener;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.core.SkyBoundPlugin;
 import me.reil.skybound.core.island.IslandManager;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
@@ -69,7 +69,7 @@ public final class SpawnerStackListener implements Listener {
             player.getInventory().setItemInMainHand(null);
         }
 
-        player.sendMessage(ChatColor.GREEN + "" + newStack);
+        sendLang(player, "spawner.stacked", "{amount}", String.valueOf(newStack));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -90,7 +90,7 @@ public final class SpawnerStackListener implements Listener {
                 block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), spawnerItem);
             }
 
-            event.getPlayer().sendMessage(ChatColor.YELLOW + "" + stackSize);
+            sendLang(event.getPlayer(), "spawner.broken-stack", "{amount}", String.valueOf(stackSize));
         }
     }
 
@@ -123,5 +123,11 @@ public final class SpawnerStackListener implements Listener {
 
     private void setStackSize(Block block, int size) {
         block.setMetadata(META_KEY, new FixedMetadataValue(plugin, size));
+    }
+
+    private void sendLang(Player player, String key, String... replacements) {
+        if (plugin instanceof SkyBoundPlugin) {
+            ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
+        }
     }
 }

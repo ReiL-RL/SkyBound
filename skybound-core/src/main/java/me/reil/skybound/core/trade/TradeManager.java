@@ -5,6 +5,7 @@ import me.reil.skybound.api.island.Island;
 import me.reil.skybound.api.trade.TradeOffer;
 import me.reil.skybound.api.trade.TradeProvider;
 import me.reil.skybound.core.island.IslandManager;
+import me.reil.skybound.core.util.InventoryUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -27,6 +28,15 @@ import java.util.UUID;
  * Players can sell items for money through a shared marketplace.
  */
 public final class TradeManager implements TradeProvider {
+
+    public enum TransactionResult {
+        SUCCESS,
+        OFFER_NOT_FOUND,
+        OWN_OFFER,
+        NO_MONEY,
+        NO_SPACE,
+        NOT_SELLER
+    }
 
     private final JavaPlugin plugin;
     private final IslandManager islandManager;
@@ -61,13 +71,18 @@ public final class TradeManager implements TradeProvider {
 
     @Override
     public boolean acceptOffer(Player buyer, String offerId) {
+        return acceptOfferDetailed(buyer, offerId) == TransactionResult.SUCCESS;
+    }
+
+    public TransactionResult acceptOfferDetailed(Player buyer, String offerId) {
         TradeOfferImpl offer = offers.get(offerId);
-        if (offer == null || !offer.isActive()) return false;
-        if (offer.getSeller().equals(buyer.getUniqueId())) return false;
+        if (offer == null || !offer.isActive()) return TransactionResult.OFFER_NOT_FOUND;
+        if (offer.getSeller().equals(buyer.getUniqueId())) return TransactionResult.OWN_OFFER;
 
         // Check buyer has enough money
         double balance = economy.getBalance(buyer.getUniqueId());
-        if (balance < offer.getPrice()) return false;
+        if (balance < offer.getPrice()) return TransactionResult.NO_MONEY;
+        if (!InventoryUtil.canFit(buyer.getInventory(), offer.getOffering())) return TransactionResult.NO_SPACE;
 
         // Transfer money
         economy.withdraw(buyer.getUniqueId(), offer.getPrice());
@@ -79,20 +94,25 @@ public final class TradeManager implements TradeProvider {
         // Deactivate offer
         offer.setActive(false);
         saveOffers();
-        return true;
+        return TransactionResult.SUCCESS;
     }
 
     @Override
     public boolean cancelOffer(Player seller, String offerId) {
+        return cancelOfferDetailed(seller, offerId) == TransactionResult.SUCCESS;
+    }
+
+    public TransactionResult cancelOfferDetailed(Player seller, String offerId) {
         TradeOfferImpl offer = offers.get(offerId);
-        if (offer == null || !offer.isActive()) return false;
-        if (!offer.getSeller().equals(seller.getUniqueId())) return false;
+        if (offer == null || !offer.isActive()) return TransactionResult.OFFER_NOT_FOUND;
+        if (!offer.getSeller().equals(seller.getUniqueId())) return TransactionResult.NOT_SELLER;
+        if (!InventoryUtil.canFit(seller.getInventory(), offer.getOffering())) return TransactionResult.NO_SPACE;
 
         // Return item to seller
         seller.getInventory().addItem(offer.getOffering());
         offer.setActive(false);
         saveOffers();
-        return true;
+        return TransactionResult.SUCCESS;
     }
 
     @Override
@@ -160,7 +180,13 @@ public final class TradeManager implements TradeProvider {
             ConfigurationSection os = offersSection.getConfigurationSection(key);
             if (os == null) continue;
 
-            UUID seller = UUID.fromString(os.getString("seller", ""));
+            UUID seller;
+            try {
+                seller = UUID.fromString(os.getString("seller", ""));
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Skipping trade offer '" + key + "' with invalid seller UUID.");
+                continue;
+            }
             String islandId = os.getString("island-id", "");
             ItemStack offering = os.getItemStack("offering");
             double price = os.getDouble("price", 0.0);
@@ -174,4 +200,5 @@ public final class TradeManager implements TradeProvider {
 
         plugin.getLogger().info("Loaded " + offers.size() + " trade offers.");
     }
+
 }

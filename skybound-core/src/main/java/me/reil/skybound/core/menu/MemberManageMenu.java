@@ -66,10 +66,10 @@ public final class MemberManageMenu extends Menu {
             headMeta.setOwningPlayer(Bukkit.getOfflinePlayer(targetId));
             headMeta.setDisplayName(ChatColor.YELLOW + targetName);
             List<String> lore = new ArrayList<String>();
-            lore.add(ChatColor.GRAY + "Current role: " + getRoleColor(currentRole) + currentRole.name());
+            lore.add(lang().get("menu.manage.current-role-line", "{role}", getRoleColor(currentRole) + currentRole.name()));
             lore.add("");
-            lore.add(ChatColor.GRAY + "Select a new role below,");
-            lore.add(ChatColor.GRAY + "or use the action buttons.");
+            lore.add(lang().get("menu.manage.info1"));
+            lore.add(lang().get("menu.manage.info2"));
             headMeta.setLore(lore);
             head.setItemMeta(headMeta);
         }
@@ -88,7 +88,7 @@ public final class MemberManageMenu extends Menu {
             ItemStack item = new ItemStack(mat);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                String prefix = isCurrent ? ChatColor.BOLD + "\u25B6 " : "";
+                String prefix = isCurrent ? ChatColor.BOLD + "▶ " : "";
                 meta.setDisplayName(getRoleColor(role) + prefix + role.name());
                 List<String> lore = new ArrayList<String>();
                 if (isCurrent) {
@@ -118,8 +118,7 @@ public final class MemberManageMenu extends Menu {
                     lang().get("menu.manage.transfer-lore")));
         }
 
-        // Back (slot 40)
-        inventory.setItem(40, makeItem(Material.ARROW, lang().get("button.back")));
+        addBackButton(40);
     }
 
     @Override
@@ -136,10 +135,10 @@ public final class MemberManageMenu extends Menu {
 
                 // Set role directly
                 island.setMemberRole(targetId, newRole);
-                player.sendMessage(ChatColor.GREEN + targetName + " is now " + getRoleColor(newRole) + newRole.name());
+                lang().send(player, "team.role-changed", "{player}", targetName, "{role}", getRoleColor(newRole) + newRole.name());
                 Player target = Bukkit.getPlayer(targetId);
                 if (target != null) {
-                    target.sendMessage(ChatColor.GREEN + "Your role was changed to " + getRoleColor(newRole) + newRole.name());
+                    lang().send(target, "team.role-changed-target", "{role}", getRoleColor(newRole) + newRole.name());
                 }
                 new MemberManageMenu(player, plugin, island, targetId).open();
                 return;
@@ -155,12 +154,12 @@ public final class MemberManageMenu extends Menu {
                 boolean kicked = plugin.getTeamManager().kick(island, player.getUniqueId(), targetId);
                 if (kicked) {
                     plugin.getIslandManager().unregisterMember(targetId);
-                    player.sendMessage(ChatColor.GREEN + targetName + " kicked.");
+                    lang().send(player, "team.kicked", "{player}", targetName);
                     Player kickedPlayer = Bukkit.getPlayer(targetId);
-                    if (kickedPlayer != null) kickedPlayer.sendMessage(ChatColor.RED + "You were kicked from the island.");
+                    if (kickedPlayer != null) lang().send(kickedPlayer, "team.kicked-target");
                     new IslandMembersMenu(player, plugin, island).open();
                 } else {
-                    player.sendMessage(ChatColor.RED + "Cannot kick this player.");
+                    lang().send(player, "team.cannot-kick");
                 }
                 break;
 
@@ -168,9 +167,9 @@ public final class MemberManageMenu extends Menu {
                 if (!island.getOwner().equals(player.getUniqueId())) break;
                 boolean ok = plugin.getTeamManager().transferOwnership(island, player.getUniqueId(), targetId);
                 if (ok) {
-                    player.sendMessage(ChatColor.GOLD + "Ownership transferred to " + targetName + "!");
+                    lang().send(player, "team.transferred", "{player}", targetName);
                     Player newOwner = Bukkit.getPlayer(targetId);
-                    if (newOwner != null) newOwner.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "You are now the island owner!");
+                    if (newOwner != null) lang().send(newOwner, "team.transferred-target");
                 }
                 player.closeInventory();
                 break;
@@ -193,13 +192,13 @@ public final class MemberManageMenu extends Menu {
 
     private String getRoleColor(IslandRole role) {
         switch (role) {
-            case OWNER: return "\u00a76";
-            case ADMIN: return "\u00a7c";
-            case MODERATOR: return "\u00a7b";
-            case MEMBER: return "\u00a7a";
-            case TRUSTED: return "\u00a7e";
-            case COOP: return "\u00a77";
-            default: return "\u00a78";
+            case OWNER: return ChatColor.GOLD.toString();
+            case ADMIN: return ChatColor.RED.toString();
+            case MODERATOR: return ChatColor.AQUA.toString();
+            case MEMBER: return ChatColor.GREEN.toString();
+            case TRUSTED: return ChatColor.YELLOW.toString();
+            case COOP: return ChatColor.GRAY.toString();
+            default: return ChatColor.DARK_GRAY.toString();
         }
     }
 

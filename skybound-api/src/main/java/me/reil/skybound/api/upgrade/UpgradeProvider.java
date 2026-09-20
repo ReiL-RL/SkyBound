@@ -33,6 +33,14 @@ public interface UpgradeProvider {
     boolean purchase(Player buyer, Island island, String upgradeId);
 
     /**
+     * Force upgrade to next level without cost check (used by Island Core addon).
+     * @return true if upgraded successfully
+     */
+    default boolean forceUpgrade(Island island, String upgradeId) {
+        return false;
+    }
+
+    /**
      * Get the cost for the next level.
      */
     double getNextLevelCost(Island island, String upgradeId);

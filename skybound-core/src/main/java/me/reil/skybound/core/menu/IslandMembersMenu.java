@@ -69,7 +69,7 @@ public final class IslandMembersMenu extends Menu {
             SkullMeta meta = (SkullMeta) head.getItemMeta();
             if (meta != null) {
                 meta.setOwningPlayer(member);
-                String color = isOwner ? "\u00a76" : (role == IslandRole.ADMIN ? "\u00a7c" : (role == IslandRole.MODERATOR ? "\u00a7b" : "\u00a7a"));
+                String color = isOwner ? ChatColor.GOLD.toString() : (role == IslandRole.ADMIN ? ChatColor.RED.toString() : (role == IslandRole.MODERATOR ? ChatColor.AQUA.toString() : ChatColor.GREEN.toString()));
                 meta.setDisplayName(color + name);
                 List<String> lore = new ArrayList<String>();
                 lore.add(color("&7") + lang().get("menu.members.role") + getRoleColor(role) + role.name());
@@ -87,7 +87,7 @@ public final class IslandMembersMenu extends Menu {
         }
 
         // Back button
-        inventory.setItem(49, makeItem(Material.ARROW, lang().get("button.back")));
+        addBackButton(49);
 
         // Info
         ItemStack info = makeItem(Material.OAK_SIGN, lang().get("menu.members.count", "{count}", String.valueOf(island.getMembers().size()), "{max}", String.valueOf(plugin.getUpgradeManager().getTeamSizeLimit(island))));
@@ -115,13 +115,13 @@ public final class IslandMembersMenu extends Menu {
 
     private String getRoleColor(IslandRole role) {
         switch (role) {
-            case OWNER: return "\u00a76";
-            case ADMIN: return "\u00a7c";
-            case MODERATOR: return "\u00a7b";
-            case MEMBER: return "\u00a7a";
-            case TRUSTED: return "\u00a7e";
-            case COOP: return "\u00a77";
-            default: return "\u00a78";
+            case OWNER: return ChatColor.GOLD.toString();
+            case ADMIN: return ChatColor.RED.toString();
+            case MODERATOR: return ChatColor.AQUA.toString();
+            case MEMBER: return ChatColor.GREEN.toString();
+            case TRUSTED: return ChatColor.YELLOW.toString();
+            case COOP: return ChatColor.GRAY.toString();
+            default: return ChatColor.DARK_GRAY.toString();
         }
     }
 

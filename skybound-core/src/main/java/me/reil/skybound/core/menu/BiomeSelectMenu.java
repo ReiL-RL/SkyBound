@@ -2,7 +2,6 @@ package me.reil.skybound.core.menu;
 
 import me.reil.skybound.api.island.Island;
 import me.reil.skybound.core.SkyBoundPlugin;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
@@ -22,18 +21,18 @@ public final class BiomeSelectMenu extends Menu {
     private final Island island;
 
     private static final BiomeOption[] BIOMES = {
-            new BiomeOption("PLAINS", Material.GRASS_BLOCK, "&aPlains", "&7Classic green biome."),
-            new BiomeOption("DESERT", Material.SAND, "&eDesert", "&7Hot and sandy."),
-            new BiomeOption("FOREST", Material.OAK_SAPLING, "&2Forest", "&7Trees and greenery."),
-            new BiomeOption("JUNGLE", Material.JUNGLE_SAPLING, "&aJungle", "&7Dense tropical forest."),
-            new BiomeOption("SNOWY_TAIGA", Material.SNOW_BLOCK, "&bWinter", "&7Cold and snowy."),
-            new BiomeOption("MUSHROOM_FIELDS", Material.RED_MUSHROOM_BLOCK, "&dMushroom", "&7Mycelium island."),
-            new BiomeOption("BADLANDS", Material.RED_SAND, "&6Badlands", "&7Mesa with terracotta."),
-            new BiomeOption("FLOWER_FOREST", Material.POPPY, "&dFlower Forest", "&7Colorful flowers."),
-            new BiomeOption("DARK_FOREST", Material.DARK_OAK_SAPLING, "&8Dark Forest", "&7Thick dark trees."),
-            new BiomeOption("SWAMP", Material.LILY_PAD, "&2Swamp", "&7Murky waters."),
-            new BiomeOption("OCEAN", Material.WATER_BUCKET, "&9Ocean", "&7Deep blue water."),
-            new BiomeOption("THE_VOID", Material.OBSIDIAN, "&8Void", "&7Empty darkness."),
+            new BiomeOption("PLAINS", Material.GRASS_BLOCK, "menu.biome.plains", "menu.biome.plains-lore"),
+            new BiomeOption("DESERT", Material.SAND, "menu.biome.desert", "menu.biome.desert-lore"),
+            new BiomeOption("FOREST", Material.OAK_SAPLING, "menu.biome.forest", "menu.biome.forest-lore"),
+            new BiomeOption("JUNGLE", Material.JUNGLE_SAPLING, "menu.biome.jungle", "menu.biome.jungle-lore"),
+            new BiomeOption("SNOWY_TAIGA", Material.SNOW_BLOCK, "menu.biome.winter", "menu.biome.winter-lore"),
+            new BiomeOption("MUSHROOM_FIELDS", Material.RED_MUSHROOM_BLOCK, "menu.biome.mushroom", "menu.biome.mushroom-lore"),
+            new BiomeOption("BADLANDS", Material.RED_SAND, "menu.biome.badlands", "menu.biome.badlands-lore"),
+            new BiomeOption("FLOWER_FOREST", Material.POPPY, "menu.biome.flower", "menu.biome.flower-lore"),
+            new BiomeOption("DARK_FOREST", Material.DARK_OAK_SAPLING, "menu.biome.dark-forest", "menu.biome.dark-forest-lore"),
+            new BiomeOption("SWAMP", Material.LILY_PAD, "menu.biome.swamp", "menu.biome.swamp-lore"),
+            new BiomeOption("OCEAN", Material.WATER_BUCKET, "menu.biome.ocean", "menu.biome.ocean-lore"),
+            new BiomeOption("THE_VOID", Material.OBSIDIAN, "menu.biome.void", "menu.biome.void-lore"),
     };
 
     public BiomeSelectMenu(Player player, SkyBoundPlugin plugin, Island island) {
@@ -66,18 +65,17 @@ public final class BiomeSelectMenu extends Menu {
             ItemStack item = new ItemStack(opt.icon);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', opt.displayName));
+                meta.setDisplayName(lang().get(opt.displayKey));
                 List<String> lore = new ArrayList<String>();
-                lore.add(ChatColor.translateAlternateColorCodes('&', opt.description));
+                lore.add(lang().get(opt.descriptionKey));
                 lore.add("");
-                lore.add(ChatColor.YELLOW + "\u25B6 Click to apply");
+                lore.add(lang().get("menu.biome.click"));
                 meta.setLore(lore);
                 item.setItemMeta(meta);
             }
             inventory.setItem(slot++, item);
         }
-
-        inventory.setItem(31, makeItem(Material.ARROW, ChatColor.RED + "Back"));
+        addBackButton(31);
     }
 
     @Override
@@ -95,15 +93,15 @@ public final class BiomeSelectMenu extends Menu {
         BiomeOption opt = BIOMES[index];
         Biome biome = plugin.getBiomeService().parseBiome(opt.biomeId);
         if (biome == null) {
-            player.sendMessage(ChatColor.RED + "Biome not available on this server version.");
+            lang().send(player, "biome.unavailable");
             return;
         }
 
         player.closeInventory();
-        player.sendMessage(ChatColor.YELLOW + "Changing biome... This may take a moment.");
+        lang().send(player, "biome.changing");
 
         plugin.getBiomeService().changeBiome(island, biome);
-        player.sendMessage(ChatColor.GREEN + "Biome changed to " + ChatColor.translateAlternateColorCodes('&', opt.displayName) + ChatColor.GREEN + "!");
+        lang().send(player, "biome.changed", "{biome}", lang().get(opt.displayKey));
     }
 
     private ItemStack makeItem(Material material, String name) {
@@ -119,14 +117,14 @@ public final class BiomeSelectMenu extends Menu {
     private static final class BiomeOption {
         final String biomeId;
         final Material icon;
-        final String displayName;
-        final String description;
+        final String displayKey;
+        final String descriptionKey;
 
-        BiomeOption(String biomeId, Material icon, String displayName, String description) {
+        BiomeOption(String biomeId, Material icon, String displayKey, String descriptionKey) {
             this.biomeId = biomeId;
             this.icon = icon;
-            this.displayName = displayName;
-            this.description = description;
+            this.displayKey = displayKey;
+            this.descriptionKey = descriptionKey;
         }
     }
 }

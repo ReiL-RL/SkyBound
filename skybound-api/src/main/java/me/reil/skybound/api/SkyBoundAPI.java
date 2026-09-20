@@ -1,6 +1,7 @@
 package me.reil.skybound.api;
 
 import me.reil.skybound.api.island.IslandProvider;
+import me.reil.skybound.api.island.PrestigeProvider;
 import me.reil.skybound.api.economy.EconomyProvider;
 import me.reil.skybound.api.team.TeamProvider;
 import me.reil.skybound.api.mission.MissionProvider;
@@ -84,4 +85,5 @@ public final class SkyBoundAPI {
     public SeasonProvider getSeasonProvider() { return getService(SeasonProvider.class); }
     public TradeProvider getTradeProvider() { return getService(TradeProvider.class); }
     public VisitProvider getVisitProvider() { return getService(VisitProvider.class); }
+    public PrestigeProvider getPrestigeProvider() { return getService(PrestigeProvider.class); }
 }

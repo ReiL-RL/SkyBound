@@ -67,7 +67,7 @@ public final class IslandCreateMenu extends Menu {
                     lore.add(ChatColor.translateAlternateColorCodes('&', line));
                 }
                 lore.add("");
-                lore.add(ChatColor.YELLOW + "\u25B6 Click to create!");
+                lore.add(lang().get("menu.create.click"));
                 meta.setLore(lore);
                 item.setItemMeta(meta);
             }
@@ -93,21 +93,19 @@ public final class IslandCreateMenu extends Menu {
                     // Remember schematic name for regen
                     ((me.reil.skybound.core.island.IslandImpl) island).setSchematicName(opt.schematicFile);
 
-                    // Find safe spawn: highest block at center + 1
+                    // Spawn = center of island (schematic origin = player pos when //copy)
                     org.bukkit.Location home = island.getCenter().clone();
-                    home.setY(home.getWorld().getHighestBlockYAt(home.getBlockX(), home.getBlockZ()) + 1);
                     home.setX(home.getBlockX() + 0.5);
+                    home.setY(home.getBlockY() + 1);
                     home.setZ(home.getBlockZ() + 0.5);
                     island.setHome(home);
 
                     player.teleport(island.getHome());
-                    player.sendMessage("");
-                    player.sendMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "\u2726 Island Created! \u2726");
-                    player.sendMessage(ChatColor.GRAY + "Type: " + ChatColor.translateAlternateColorCodes('&', opt.displayName));
-                    player.sendMessage(ChatColor.GRAY + "Use " + ChatColor.YELLOW + "/is help " + ChatColor.GRAY + "to see all commands.");
-                    player.sendMessage("");
+                    lang().send(player, "island.created");
+                    lang().send(player, "island.created-type", "{type}", ChatColor.translateAlternateColorCodes('&', opt.displayName));
+                    lang().send(player, "island.created-help");
                 } else {
-                    player.sendMessage(ChatColor.RED + "Could not create island.");
+                    lang().send(player, "island.cannot-create");
                 }
                 return;
             }
@@ -124,9 +122,9 @@ public final class IslandCreateMenu extends Menu {
         ConfigurationSection section = cfg.getConfigurationSection("schematics");
         if (section == null) {
             // Fallback defaults
-            options.add(new SchematicOption("default", "&a\u2726 Classic Island", Material.GRASS_BLOCK, new String[]{"&7A classic skyblock island", "&7with a tree and chest."}, "default.schem"));
-            options.add(new SchematicOption("desert", "&e\u2726 Desert Island", Material.SAND, new String[]{"&7A sandy island", "&7with a cactus."}, "desert.schem"));
-            options.add(new SchematicOption("winter", "&b\u2726 Winter Island", Material.SNOW_BLOCK, new String[]{"&7A frozen island", "&7with ice and snow."}, "winter.schem"));
+            options.add(new SchematicOption("default", "&a✦ Classic Island", Material.GRASS_BLOCK, new String[]{"&7A classic skyblock island", "&7with a tree and chest."}, "default.schem"));
+            options.add(new SchematicOption("desert", "&e✦ Desert Island", Material.SAND, new String[]{"&7A sandy island", "&7with a cactus."}, "desert.schem"));
+            options.add(new SchematicOption("winter", "&b✦ Winter Island", Material.SNOW_BLOCK, new String[]{"&7A frozen island", "&7with ice and snow."}, "winter.schem"));
             return;
         }
 

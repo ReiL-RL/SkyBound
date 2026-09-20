@@ -1,0 +1,505 @@
+# ╔═══════════════════════════════════════════════════════════════╗
+# ║         SkyBound Prestige Shop                                ║
+# ║                                                               ║
+# ║  Токены престижа выдаются за каждый /is prestige.             ║
+# ║                                                               ║
+# ║  Поля предмета:                                               ║
+# ║    material   — Material иконки в GUI                          ║
+# ║    name       — название с цветовыми кодами (&)               ║
+# ║    lore       — описание                                      ║
+# ║    cost       — стоимость в токенах престижа                  ║
+# ║    rewards    — список выдаваемых предметов (строится через    ║
+# ║                 Bukkit API, поэтому работает на любой версии). ║
+# ║    commands   — (опц.) консольные команды, {player} → ник.    ║
+# ║                                                               ║
+# ║  Поля одной награды (rewards):                                ║
+# ║    material      — Material предмета                           ║
+# ║    amount        — количество                                 ║
+# ║    enchantments  — список "ключ:уровень" (напр. sharpness:5)   ║
+# ║    spawner       — тип моба для SPAWNER (напр. ZOMBIE)         ║
+# ║    flight        — дальность полёта для FIREWORK_ROCKET        ║
+# ║                                                               ║
+# ║  Если предметы не влезают в инвентарь — выпадают под ноги.    ║
+# ╚═══════════════════════════════════════════════════════════════╝
+
+config-version: 2
+
+items:
+
+  # ════════════════════════════════════════════════════════════
+  # ОБЩИЕ
+  # ════════════════════════════════════════════════════════════
+
+  netherite_pack_small:
+    material: NETHERITE_INGOT
+    name: "&8&l✦ Набор Незерита I"
+    lore:
+      - "&7• 4x Незеритовый слиток"
+      - ""
+      - "&8✦ Общий"
+    cost: 3
+    rewards:
+      - material: NETHERITE_INGOT
+        amount: 4
+
+  enchanted_apple_set:
+    material: ENCHANTED_GOLDEN_APPLE
+    name: "&5&l✦ Набор Зачарованных яблок"
+    lore:
+      - "&7• 8x Зачарованных яблок"
+      - ""
+      - "&8✦ Общий"
+    cost: 4
+    rewards:
+      - material: ENCHANTED_GOLDEN_APPLE
+        amount: 8
+
+  xp_bottle_pack:
+    material: EXPERIENCE_BOTTLE
+    name: "&a&l✦ Набор Бутылочек опыта"
+    lore:
+      - "&7• 64x Бутылочек опыта"
+      - ""
+      - "&8✦ Общий"
+    cost: 3
+    rewards:
+      - material: EXPERIENCE_BOTTLE
+        amount: 64
+
+  totem_set:
+    material: TOTEM_OF_UNDYING
+    name: "&e&l✦ Набор Тотемов"
+    lore:
+      - "&7• 3x Тотема бессмертия"
+      - ""
+      - "&8✦ Общий"
+    cost: 5
+    rewards:
+      - material: TOTEM_OF_UNDYING
+        amount: 3
+
+  # ════════════════════════════════════════════════════════════
+  # РЕДКИЕ
+  # ════════════════════════════════════════════════════════════
+
+  enchanted_pickaxe:
+    material: NETHERITE_PICKAXE
+    name: "&b&l✦ Кирка Шахтёра"
+    lore:
+      - "&7Незеритовая кирка: Удача V, Эффективность V"
+      - ""
+      - "&5✦ Редкий"
+    cost: 8
+    rewards:
+      - material: NETHERITE_PICKAXE
+        amount: 1
+        enchantments: ["fortune:5", "efficiency:5", "unbreaking:3", "mending:1"]
+
+  enchanted_sword:
+    material: NETHERITE_SWORD
+    name: "&c&l✦ Меч Воителя"
+    lore:
+      - "&7Незеритовый меч: Острота V, Огненный аспект II"
+      - ""
+      - "&5✦ Редкий"
+    cost: 10
+    rewards:
+      - material: NETHERITE_SWORD
+        amount: 1
+        enchantments: ["sharpness:5", "sweeping_edge:3", "fire_aspect:2", "unbreaking:3", "mending:1"]
+
+  enchanted_axe:
+    material: NETHERITE_AXE
+    name: "&6&l✦ Топор Лесника"
+    lore:
+      - "&7Незеритовый топор: Острота V, Эффективность V"
+      - ""
+      - "&5✦ Редкий"
+    cost: 9
+    rewards:
+      - material: NETHERITE_AXE
+        amount: 1
+        enchantments: ["sharpness:5", "efficiency:5", "unbreaking:3", "mending:1"]
+
+  enchanted_bow:
+    material: BOW
+    name: "&e&l✦ Лук Стрелка"
+    lore:
+      - "&7Лук: Сила V, Бесконечность, Пламя"
+      - ""
+      - "&5✦ Редкий"
+    cost: 7
+    rewards:
+      - material: BOW
+        amount: 1
+        enchantments: ["power:5", "infinity:1", "unbreaking:3", "mending:1", "flame:1"]
+
+  enchanted_fishing_rod:
+    material: FISHING_ROD
+    name: "&9&l✦ Удочка Рыбака"
+    lore:
+      - "&7Удочка: Удача моря III, Приманка III"
+      - ""
+      - "&5✦ Редкий"
+    cost: 6
+    rewards:
+      - material: FISHING_ROD
+        amount: 1
+        enchantments: ["luck_of_the_sea:3", "lure:3", "unbreaking:3", "mending:1"]
+
+  shulker_box_set:
+    material: SHULKER_BOX
+    name: "&5&l✦ Набор Шалкеров"
+    lore:
+      - "&7• 4x Шалкеровая коробка"
+      - ""
+      - "&5✦ Редкий"
+    cost: 12
+    rewards:
+      - material: SHULKER_BOX
+        amount: 4
+
+  music_disc_collection:
+    material: MUSIC_DISC_PIGSTEP
+    name: "&d&l✦ Коллекция пластинок"
+    lore:
+      - "&7• Pigstep, Otherside, 5"
+      - ""
+      - "&5✦ Редкий"
+    cost: 11
+    rewards:
+      - material: MUSIC_DISC_PIGSTEP
+        amount: 1
+      - material: MUSIC_DISC_OTHERSIDE
+        amount: 1
+      - material: MUSIC_DISC_5
+        amount: 1
+
+  # ════════════════════════════════════════════════════════════
+  # ЭПИЧЕСКИЕ
+  # ════════════════════════════════════════════════════════════
+
+  enchanted_armor_set:
+    material: NETHERITE_CHESTPLATE
+    name: "&b&l✦ Полный комплект Незеритовой брони"
+    lore:
+      - "&7Все элементы зачарованы (Защита IV)"
+      - ""
+      - "&6✦ Эпический"
+    cost: 25
+    rewards:
+      - material: NETHERITE_HELMET
+        amount: 1
+        enchantments: ["protection:4", "unbreaking:3", "mending:1", "respiration:3", "aqua_affinity:1"]
+      - material: NETHERITE_CHESTPLATE
+        amount: 1
+        enchantments: ["protection:4", "unbreaking:3", "mending:1", "thorns:3"]
+      - material: NETHERITE_LEGGINGS
+        amount: 1
+        enchantments: ["protection:4", "unbreaking:3", "mending:1"]
+      - material: NETHERITE_BOOTS
+        amount: 1
+        enchantments: ["protection:4", "unbreaking:3", "mending:1", "feather_falling:4", "depth_strider:3"]
+
+  elytra_max:
+    material: ELYTRA
+    name: "&f&l✦ Элитры Пилота"
+    lore:
+      - "&7Элитры: Прочность III, Починка"
+      - ""
+      - "&6✦ Эпический"
+    cost: 18
+    rewards:
+      - material: ELYTRA
+        amount: 1
+        enchantments: ["unbreaking:3", "mending:1"]
+
+  rocket_pack:
+    material: FIREWORK_ROCKET
+    name: "&6&l✦ Тонна Фейерверков"
+    lore:
+      - "&7• 64x Фейерверков (полёт 2)"
+      - ""
+      - "&6✦ Эпический"
+    cost: 16
+    rewards:
+      - material: FIREWORK_ROCKET
+        amount: 64
+        flight: 2
+
+  netherite_pack_large:
+    material: NETHERITE_BLOCK
+    name: "&8&l✦ Сундук Незерита"
+    lore:
+      - "&7• 32x Незеритовый слиток"
+      - ""
+      - "&6✦ Эпический"
+    cost: 20
+    rewards:
+      - material: NETHERITE_INGOT
+        amount: 32
+
+  diamond_pack:
+    material: DIAMOND_BLOCK
+    name: "&b&l✦ Сундук Алмазов"
+    lore:
+      - "&7• 64x Алмаз"
+      - ""
+      - "&6✦ Эпический"
+    cost: 17
+    rewards:
+      - material: DIAMOND
+        amount: 64
+
+  emerald_pack:
+    material: EMERALD_BLOCK
+    name: "&a&l✦ Сундук Изумрудов"
+    lore:
+      - "&7• 64x Изумруд"
+      - ""
+      - "&6✦ Эпический"
+    cost: 19
+    rewards:
+      - material: EMERALD
+        amount: 64
+
+  # ════════════════════════════════════════════════════════════
+  # ЛЕГЕНДАРНЫЕ
+  # ════════════════════════════════════════════════════════════
+
+  trident_max:
+    material: TRIDENT
+    name: "&3&l✦ Трезубец Океана"
+    lore:
+      - "&7Трезубец: Верность III, Каналы, Волна III"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 35
+    rewards:
+      - material: TRIDENT
+        amount: 1
+        enchantments: ["loyalty:3", "channeling:1", "unbreaking:3", "mending:1"]
+
+  beacon_pyramid:
+    material: BEACON
+    name: "&b&l✦ Маяк + основание"
+    lore:
+      - "&7• 1x Маяк"
+      - "&7• 81x Незеритовый блок"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 50
+    rewards:
+      - material: BEACON
+        amount: 1
+      - material: NETHERITE_BLOCK
+        amount: 64
+      - material: NETHERITE_BLOCK
+        amount: 17
+
+  netherite_armor_max:
+    material: NETHERITE_CHESTPLATE
+    name: "&b&l✦ Незеритовая броня PvP-Master"
+    lore:
+      - "&7Боевой комплект (Защита от взрывов IV, Шипы III)"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 40
+    rewards:
+      - material: NETHERITE_HELMET
+        amount: 1
+        enchantments: ["blast_protection:4", "unbreaking:3", "mending:1", "respiration:3"]
+      - material: NETHERITE_CHESTPLATE
+        amount: 1
+        enchantments: ["blast_protection:4", "thorns:3", "unbreaking:3", "mending:1"]
+      - material: NETHERITE_LEGGINGS
+        amount: 1
+        enchantments: ["blast_protection:4", "unbreaking:3", "mending:1"]
+      - material: NETHERITE_BOOTS
+        amount: 1
+        enchantments: ["blast_protection:4", "feather_falling:4", "soul_speed:3", "unbreaking:3", "mending:1"]
+
+  shulker_pack:
+    material: SHULKER_SHELL
+    name: "&5&l✦ 16x Шалкеровых коробок"
+    lore:
+      - "&7• 16x Шалкеровая коробка"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 32
+    rewards:
+      - material: SHULKER_BOX
+        amount: 16
+
+  saddle_horse:
+    material: SADDLE
+    name: "&6&l✦ Скаковая лошадь"
+    lore:
+      - "&7• Седло, 2x яйцо лошади, попона"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 31
+    rewards:
+      - material: SADDLE
+        amount: 1
+      - material: HORSE_SPAWN_EGG
+        amount: 2
+      - material: DIAMOND_HORSE_ARMOR
+        amount: 1
+
+  villager_egg_set:
+    material: VILLAGER_SPAWN_EGG
+    name: "&a&l✦ Деревня"
+    lore:
+      - "&7• 5x торговца, 2x колокол, 64x изумруд"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 45
+    rewards:
+      - material: VILLAGER_SPAWN_EGG
+        amount: 5
+      - material: BELL
+        amount: 2
+      - material: EMERALD
+        amount: 64
+
+  ender_chest_pack:
+    material: ENDER_CHEST
+    name: "&5&l✦ Эндер-комплект"
+    lore:
+      - "&7• 16x эндер-сундук, 32x жемчуг, 8x око"
+      - ""
+      - "&5✦ Легендарный"
+    cost: 33
+    rewards:
+      - material: ENDER_CHEST
+        amount: 16
+      - material: ENDER_PEARL
+        amount: 32
+      - material: ENDER_EYE
+        amount: 8
+
+  # ════════════════════════════════════════════════════════════
+  # МИФИЧЕСКИЕ
+  # ════════════════════════════════════════════════════════════
+
+  dragon_egg:
+    material: DRAGON_EGG
+    name: "&5&l&n✦ Яйцо Дракона"
+    lore:
+      - "&7Уникальный трофей."
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 100
+    rewards:
+      - material: DRAGON_EGG
+        amount: 1
+
+  beacon_ultimate:
+    material: BEACON
+    name: "&6&l&n✦ Маяк Богов"
+    lore:
+      - "&7• 4x маяк, 256x незеритовый блок, 16x алмазный"
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 200
+    rewards:
+      - material: BEACON
+        amount: 4
+      - material: NETHERITE_BLOCK
+        amount: 64
+      - material: NETHERITE_BLOCK
+        amount: 64
+      - material: NETHERITE_BLOCK
+        amount: 64
+      - material: NETHERITE_BLOCK
+        amount: 64
+      - material: DIAMOND_BLOCK
+        amount: 16
+
+  god_kit:
+    material: NETHER_STAR
+    name: "&e&l&n✦ Божественный Комплект"
+    lore:
+      - "&7Незеритовая броня, меч, кирка, лук, элитры, тотемы"
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 150
+    rewards:
+      - material: NETHERITE_HELMET
+        amount: 1
+        enchantments: ["protection:6", "unbreaking:5", "mending:1", "respiration:5", "aqua_affinity:1"]
+      - material: NETHERITE_CHESTPLATE
+        amount: 1
+        enchantments: ["protection:6", "unbreaking:5", "mending:1", "thorns:3"]
+      - material: NETHERITE_LEGGINGS
+        amount: 1
+        enchantments: ["protection:6", "unbreaking:5", "mending:1"]
+      - material: NETHERITE_BOOTS
+        amount: 1
+        enchantments: ["protection:6", "unbreaking:5", "mending:1", "feather_falling:4", "depth_strider:3"]
+      - material: NETHERITE_SWORD
+        amount: 1
+        enchantments: ["sharpness:7", "sweeping_edge:3", "fire_aspect:2", "unbreaking:5", "mending:1"]
+      - material: NETHERITE_PICKAXE
+        amount: 1
+        enchantments: ["fortune:5", "efficiency:6", "unbreaking:5", "mending:1"]
+      - material: BOW
+        amount: 1
+        enchantments: ["power:7", "infinity:1", "unbreaking:5", "mending:1", "flame:1", "punch:2"]
+      - material: ELYTRA
+        amount: 1
+        enchantments: ["unbreaking:5", "mending:1"]
+      - material: TOTEM_OF_UNDYING
+        amount: 64
+
+  spawner_zombie:
+    material: SPAWNER
+    name: "&8&l✦ Спавнер Зомби"
+    lore:
+      - "&7Готовый спавнер зомби"
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 75
+    rewards:
+      - material: SPAWNER
+        amount: 1
+        spawner: ZOMBIE
+
+  spawner_skeleton:
+    material: SPAWNER
+    name: "&f&l✦ Спавнер Скелетов"
+    lore:
+      - "&7Готовый спавнер скелетов"
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 80
+    rewards:
+      - material: SPAWNER
+        amount: 1
+        spawner: SKELETON
+
+  spawner_blaze:
+    material: SPAWNER
+    name: "&6&l✦ Спавнер Ифритов"
+    lore:
+      - "&7Огненные палочки без Незера"
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 120
+    rewards:
+      - material: SPAWNER
+        amount: 1
+        spawner: BLAZE
+
+  permanent_fly:
+    material: FEATHER
+    name: "&b&l&n✦ Постоянный полёт"
+    lore:
+      - "&7Даёт право на полёт навсегда"
+      - ""
+      - "&4✦✦ МИФИЧЕСКИЙ"
+    cost: 250
+    commands:
+      - "lp user {player} permission set essentials.fly true"
+      - "lp user {player} permission set essentials.fly.others false"

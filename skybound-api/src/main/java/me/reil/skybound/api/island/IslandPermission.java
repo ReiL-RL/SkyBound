@@ -49,6 +49,7 @@ public enum IslandPermission {
     // Economy
     BANK_DEPOSIT,
     BANK_WITHDRAW,
+    MANAGE_SHOP,
     PURCHASE_UPGRADE,
     PURCHASE_BOOSTER,
 

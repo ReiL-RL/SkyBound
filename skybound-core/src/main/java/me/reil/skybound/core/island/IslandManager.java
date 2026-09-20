@@ -14,6 +14,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +29,7 @@ public final class IslandManager implements IslandProvider {
     private final StorageManager storage;
     private final Map<String, IslandImpl> islands = new LinkedHashMap<String, IslandImpl>();
     private final Map<UUID, String> playerIslandMap = new LinkedHashMap<UUID, String>();
+    private final Map<String, String> islandGridIndex = new LinkedHashMap<String, String>();
     private int nextGridIndex = 0;
 
     public IslandManager(JavaPlugin plugin, CoreConfig config, StorageManager storage) {
@@ -41,6 +43,7 @@ public final class IslandManager implements IslandProvider {
         Map<String, IslandImpl> loaded = storage.loadIslands();
         for (Map.Entry<String, IslandImpl> entry : loaded.entrySet()) {
             islands.put(entry.getKey(), entry.getValue());
+            indexIsland(entry.getValue());
             for (UUID member : entry.getValue().getMembers()) {
                 playerIslandMap.put(member, entry.getKey());
             }
@@ -95,6 +98,7 @@ public final class IslandManager implements IslandProvider {
 
         // Register island in maps FIRST so addons can find it via API
         islands.put(islandId, island);
+        indexIsland(island);
         playerIslandMap.put(owner.getUniqueId(), islandId);
 
         // Fire event AFTER island is registered — addons (island-core) listen to this
@@ -103,35 +107,15 @@ public final class IslandManager implements IslandProvider {
         if (event.isCancelled()) {
             // Rollback registration
             islands.remove(islandId);
+            unindexIsland(island);
             playerIslandMap.remove(owner.getUniqueId());
             return null;
         }
 
-        // Direct notification to Island Core addon (backup if event doesn't reach)
-        try {
-            org.bukkit.plugin.Plugin islandCorePlugin = Bukkit.getPluginManager().getPlugin("SkyBound-IslandCore");
-            if (islandCorePlugin != null && islandCorePlugin.isEnabled()) {
-                plugin.getLogger().info("Notifying IslandCore addon...");
-                // Give cores directly via scheduled task (ensures plugin is fully ready)
-                final org.bukkit.entity.Player finalOwner = owner;
-                Bukkit.getScheduler().runTaskLater((org.bukkit.plugin.java.JavaPlugin) plugin, new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            java.lang.reflect.Method m = islandCorePlugin.getClass().getMethod("onIslandCreated", org.bukkit.entity.Player.class, String.class);
-                            m.setAccessible(true);
-                            m.invoke(islandCorePlugin, finalOwner, islandId);
-                        } catch (Exception e) {
-                            plugin.getLogger().warning("Failed to notify IslandCore: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-                        }
-                    }
-                }, 2L);
-            } else {
-                plugin.getLogger().info("IslandCore addon not found or not enabled.");
-            }
-        } catch (Exception e) {
-            plugin.getLogger().warning("IslandCore notification error: " + e.getMessage());
-        }
+        // The addon (SkyBound-IslandCore) places its cores by listening to
+        // IslandCreateEvent above. We must NOT also call onIslandCreated() directly
+        // here — doing both makes the addon place TWO XP cores. The event is the
+        // single source of truth on creation.
 
         plugin.getLogger().info("Island created: " + islandId + " for " + owner.getName() + " (schematic: " + schematicName + ")");
         saveData();
@@ -153,7 +137,7 @@ public final class IslandManager implements IslandProvider {
             Player p = Bukkit.getPlayer(member);
             if (p != null && p.isOnline()) {
                 p.teleport(spawn);
-                p.sendMessage("\u00a7e\u2726 Остров удалён.");
+                sendLang(p, "island.deleted");
             }
             playerIslandMap.remove(member);
         }
@@ -163,11 +147,12 @@ public final class IslandManager implements IslandProvider {
         Bukkit.getScheduler().runTask(plugin, new Runnable() {
             @Override
             public void run() {
-                clearIslandBlocks(toDelete);
+                clearIslandBlocksBatched(toDelete, null);
             }
         });
 
         islands.remove(islandId);
+        unindexIsland(island);
         saveData();
         plugin.getLogger().info("Island deleted: " + islandId);
         return true;
@@ -215,6 +200,20 @@ public final class IslandManager implements IslandProvider {
         String worldName = location.getWorld().getName();
         if (!worldName.startsWith(config.getIslandWorldName())) return null;
 
+        int spacing = Math.max(1, config.getIslandSpacing());
+        int gridX = (int) Math.round(location.getX() / spacing);
+        int gridZ = (int) Math.round(location.getZ() / spacing);
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                String islandId = islandGridIndex.get(gridKey(worldName, gridX + dx, gridZ + dz));
+                IslandImpl island = islandId == null ? null : islands.get(islandId);
+                if (island != null && island.isWithinBounds(location)) {
+                    return island;
+                }
+            }
+        }
+
         for (IslandImpl island : islands.values()) {
             if (island.isWithinBounds(location)) {
                 return island;
@@ -252,8 +251,16 @@ public final class IslandManager implements IslandProvider {
 
     /**
      * Recalculate island value based on placed blocks.
+     * If the island-core addon is registered AND configured to drive value,
+     * we skip the block scan and keep the accumulated value (set via {@link #addValue(IslandImpl, double)}).
      */
     public double recalculateValue(IslandImpl island) {
+        // When the island-core addon is active, value is accumulated via XP Core deposits.
+        // Don't override that with a block scan.
+        if (isIslandCoreActive()) {
+            return island.getValue();
+        }
+
         Location center = island.getCenter();
         World world = center.getWorld();
         if (world == null) return 0.0;
@@ -281,6 +288,29 @@ public final class IslandManager implements IslandProvider {
 
         island.setValue(totalValue);
         return totalValue;
+    }
+
+    /**
+     * Add to island value (used by Island Core XP Core deposits).
+     */
+    public void addValue(IslandImpl island, double amount) {
+        if (amount <= 0) return;
+        island.setValue(island.getValue() + amount);
+    }
+
+    /**
+     * Check if the island-core addon is registered.
+     */
+    public boolean isIslandCoreActive() {
+        try {
+            if (me.reil.skybound.api.SkyBoundAPI.isAvailable()) {
+                me.reil.skybound.api.SkyBoundAPI api = me.reil.skybound.api.SkyBoundAPI.get();
+                if (api.hasService(me.reil.skybound.api.addon.AddonRegistry.class)) {
+                    return api.getService(me.reil.skybound.api.addon.AddonRegistry.class).isRegistered("island-core");
+                }
+            }
+        } catch (Throwable ignored) {}
+        return false;
     }
 
     /**
@@ -325,7 +355,9 @@ public final class IslandManager implements IslandProvider {
             for (UUID memberId : island.getMembers()) {
                 Player member = Bukkit.getPlayer(memberId);
                 if (member != null) {
-                    member.sendMessage("\u00a76\u00a7lIsland Level Up! \u00a7e" + oldLevel + " \u00a77\u2192 \u00a7a" + newLevel);
+                    sendLang(member, "island.level-up",
+                            "{old}", String.valueOf(oldLevel),
+                            "{new}", String.valueOf(newLevel));
                 }
             }
         }
@@ -344,7 +376,6 @@ public final class IslandManager implements IslandProvider {
         if (world == null) return;
         int radius = island.getRadius();
         int cx = center.getBlockX();
-        int cy = center.getBlockY();
         int cz = center.getBlockZ();
 
         for (int x = cx - radius; x <= cx + radius; x++) {
@@ -353,6 +384,91 @@ public final class IslandManager implements IslandProvider {
                     world.getBlockAt(x, y, z).setType(Material.AIR, false);
                 }
             }
+        }
+
+        // Also clear all entities on the island
+        clearIslandEntities(island);
+    }
+
+    public void clearIslandBlocksBatched(final IslandImpl island, final Runnable done) {
+        Location center = island.getCenter();
+        final World world = center.getWorld();
+        if (world == null) {
+            if (done != null) done.run();
+            return;
+        }
+
+        final int radius = island.getRadius();
+        final int minX = center.getBlockX() - radius;
+        final int maxX = center.getBlockX() + radius;
+        final int minZ = center.getBlockZ() - radius;
+        final int maxZ = center.getBlockZ() + radius;
+        final int maxY = world.getMaxHeight();
+        final int blocksPerTick = 4000;
+
+        new BukkitRunnable() {
+            private int x = minX;
+            private int z = minZ;
+            private int y = 0;
+
+            @Override
+            public void run() {
+                int processed = 0;
+                while (x <= maxX && processed < blocksPerTick) {
+                    world.getBlockAt(x, y, z).setType(Material.AIR, false);
+                    processed++;
+
+                    y++;
+                    if (y >= maxY) {
+                        y = 0;
+                        z++;
+                        if (z > maxZ) {
+                            z = minZ;
+                            x++;
+                        }
+                    }
+                }
+
+                if (x > maxX) {
+                    clearIslandEntities(island);
+                    if (done != null) done.run();
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    /**
+     * Удаляет все сущности на острове (кроме игроков), чтобы они не накапливались.
+     * Очищает: мобов, животных, дропы, рамки, картины, армор-стенды и т.д.
+     */
+    public void clearIslandEntities(IslandImpl island) {
+        Location center = island.getCenter();
+        World world = center.getWorld();
+        if (world == null) return;
+        int radius = island.getRadius();
+        int cx = center.getBlockX();
+        int cz = center.getBlockZ();
+
+        int removed = 0;
+        for (org.bukkit.entity.Entity entity : world.getEntities()) {
+            // Skip players
+            if (entity instanceof org.bukkit.entity.Player) continue;
+
+            Location eLoc = entity.getLocation();
+            int ex = eLoc.getBlockX();
+            int ez = eLoc.getBlockZ();
+
+            // Check if entity is within island bounds
+            if (ex >= cx - radius && ex <= cx + radius
+                    && ez >= cz - radius && ez <= cz + radius) {
+                entity.remove();
+                removed++;
+            }
+        }
+
+        if (removed > 0) {
+            plugin.getLogger().info("Removed " + removed + " entities from island " + island.getId());
         }
     }
 
@@ -382,5 +498,37 @@ public final class IslandManager implements IslandProvider {
         }
 
         return new Location(world, x * spacing, baseY, z * spacing);
+    }
+
+    private void indexIsland(IslandImpl island) {
+        Location center = island.getCenter();
+        World world = center.getWorld();
+        if (world == null) return;
+
+        int spacing = Math.max(1, config.getIslandSpacing());
+        int gridX = (int) Math.round(center.getX() / spacing);
+        int gridZ = (int) Math.round(center.getZ() / spacing);
+        islandGridIndex.put(gridKey(world.getName(), gridX, gridZ), island.getId());
+    }
+
+    private void unindexIsland(IslandImpl island) {
+        Location center = island.getCenter();
+        World world = center.getWorld();
+        if (world == null) return;
+
+        int spacing = Math.max(1, config.getIslandSpacing());
+        int gridX = (int) Math.round(center.getX() / spacing);
+        int gridZ = (int) Math.round(center.getZ() / spacing);
+        islandGridIndex.remove(gridKey(world.getName(), gridX, gridZ));
+    }
+
+    private String gridKey(String worldName, int gridX, int gridZ) {
+        return worldName + ":" + gridX + ":" + gridZ;
+    }
+
+    private void sendLang(Player player, String key, String... replacements) {
+        if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+            ((me.reil.skybound.core.SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
+        }
     }
 }

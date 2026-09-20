@@ -29,6 +29,11 @@ public final class PlayerJoinListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        // Clean up per-player border tracking state to avoid stale map entries.
+        if (plugin.getBorderVisualListener() != null) {
+            plugin.getBorderVisualListener().clearPlayer(event.getPlayer().getUniqueId());
+        }
+
         // Check if all island members are now offline
         Island island = islandManager.getPlayerIsland(event.getPlayer().getUniqueId());
         if (island == null) return;

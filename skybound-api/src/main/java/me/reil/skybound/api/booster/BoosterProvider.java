@@ -29,6 +29,14 @@ public interface BoosterProvider {
     boolean purchase(Player buyer, Island island, String boosterId);
 
     /**
+     * Force activate a booster without cost check (used by Island Core addon).
+     * @return true if activated successfully
+     */
+    default boolean forceActivate(Island island, String boosterId) {
+        return false;
+    }
+
+    /**
      * Check if a booster is currently active on an island.
      */
     boolean isActive(Island island, String boosterId);

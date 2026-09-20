@@ -20,7 +20,7 @@ public final class ShopCategoryImpl implements ShopCategory {
     public ShopCategoryImpl(String id, String displayName, List<String> description, Material icon, int slot) {
         this.id = id;
         this.displayName = displayName;
-        this.description = description;
+        this.description = description != null ? Collections.unmodifiableList(new ArrayList<String>(description)) : Collections.<String>emptyList();
         this.icon = icon;
         this.slot = slot;
     }
@@ -37,7 +37,7 @@ public final class ShopCategoryImpl implements ShopCategory {
         return Collections.unmodifiableList((List<? extends ShopItem>) (List<?>) items);
     }
 
-    public List<ShopItemImpl> getItemImpls() { return items; }
+    public List<ShopItemImpl> getItemImpls() { return Collections.unmodifiableList(items); }
 
     public void addItem(ShopItemImpl item) { items.add(item); }
 }

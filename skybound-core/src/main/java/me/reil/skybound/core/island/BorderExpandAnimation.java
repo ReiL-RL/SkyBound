@@ -1,6 +1,7 @@
 package me.reil.skybound.core.island;
 
 import me.reil.skybound.api.island.Island;
+import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -38,7 +39,7 @@ public final class BorderExpandAnimation {
             Player member = Bukkit.getPlayer(memberId);
             if (member != null && member.isOnline()) {
                 member.playSound(member.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-                member.sendMessage("\u00a7a\u00a7lIsland border expanded! \u00a7e" + oldRadius + " \u00a77\u2192 \u00a7a" + newRadius);
+                sendLang(member, "border.expanded", "{old}", String.valueOf(oldRadius), "{new}", String.valueOf(newRadius));
             }
         }
 
@@ -73,6 +74,12 @@ public final class BorderExpandAnimation {
             // East and West edges
             center.getWorld().spawnParticle(Particle.REDSTONE, cx - radius + 0.5, y, cz + i + 0.5, 1, dust);
             center.getWorld().spawnParticle(Particle.REDSTONE, cx + radius + 0.5, y, cz + i + 0.5, 1, dust);
+        }
+    }
+
+    private void sendLang(Player player, String key, String... replacements) {
+        if (plugin instanceof SkyBoundPlugin) {
+            ((SkyBoundPlugin) plugin).getLangManager().send(player, key, replacements);
         }
     }
 }

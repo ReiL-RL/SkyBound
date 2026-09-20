@@ -52,4 +52,10 @@ public interface MissionProvider {
      * Reset a player's mission progress (for repeatable missions).
      */
     void resetProgress(UUID playerId, String missionId);
+
+    /**
+     * Track a player action and update all matching mission conditions.
+     * Used by addons to integrate custom progress sources.
+     */
+    void trackAction(UUID playerId, MissionType actionType, String actionTarget, int amount);
 }

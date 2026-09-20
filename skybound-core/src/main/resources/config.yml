@@ -71,3 +71,17 @@ island-core:
 economy:
   currency-name: "coin"
   currency-name-plural: "coins"
+
+# Prestige system
+# Players sacrifice island XP to earn prestige tokens (spent in the prestige shop).
+prestige:
+  # Minimum island level required to perform a prestige.
+  min-level: 30
+  # XP cost for ONE prestige. Set higher to make prestige "expensive".
+  # If 0 — falls back to (min-level × island.xp-per-level).
+  cost-xp: 50000
+  # How many prestige tokens are granted per single prestige.
+  tokens-per-prestige: 1
+  # Show the prestige button inside the Upgrades menu ("Ядро улучшений").
+  show-in-upgrades: true
+

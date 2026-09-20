@@ -31,62 +31,161 @@ public final class IslandMainMenu extends Menu {
 
     @Override
     public String getTitle() {
-        return lang.get("menu.main.title");
+        return msg("menu.main.title", "{island}", island.getName());
     }
 
     @Override
     public int getSize() {
-        return 45;
+        return 54;
     }
 
     @Override
     public void build() {
         createInventory(getTitle(), getSize());
 
-        // Border
-        ItemStack border = makeItem(Material.BLACK_STAINED_GLASS_PANE, " ");
-        for (int i = 0; i < 9; i++) inventory.setItem(i, border);
-        for (int i = 36; i < 45; i++) inventory.setItem(i, border);
+        // Decorative top row (cyan glass)
+        ItemStack topGlass = decoration(Material.CYAN_STAINED_GLASS_PANE, " ");
+        for (int i = 0; i < 9; i++) {
+            if (i == 4) continue;
+            inventory.setItem(i, topGlass);
+        }
 
-        // Island info (slot 4)
-        setItem(4, Material.GRASS_BLOCK, "&6" + island.getName(),
-                "&7\u2726 \u0423\u0440\u043e\u0432\u0435\u043d\u044c: &e" + island.getLevel(),
-                "&7\u2726 \u0423\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0438: &e" + island.getMembers().size(),
-                "&7\u2726 \u0411\u0430\u043d\u043a: &e$" + String.format("%.0f", island.getBankBalance()),
-                "&7\u2726 \u0421\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c: &e" + String.format("%.0f", island.getValue()));
+        // Side columns
+        ItemStack sideGlass = decoration(Material.LIGHT_GRAY_STAINED_GLASS_PANE, " ");
+        for (int row = 1; row <= 4; row++) {
+            inventory.setItem(row * 9, sideGlass);
+            inventory.setItem(row * 9 + 8, sideGlass);
+        }
 
-        // Row 1
-        setItem(10, Material.OAK_DOOR, lang.get("menu.main.teleport"), "&7\u041d\u0430\u0436\u043c\u0438 \u0434\u043b\u044f \u0442\u0435\u043b\u0435\u043f\u043e\u0440\u0442\u0430.");
-        setItem(12, Material.PLAYER_HEAD, lang.get("menu.main.members"), "&7\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043a\u043e\u043c\u0430\u043d\u0434\u043e\u0439.");
+        // Decorative bottom row (gray glass)
+        ItemStack bottomGlass = decoration(Material.GRAY_STAINED_GLASS_PANE, " ");
+        for (int i = 45; i < 54; i++) inventory.setItem(i, bottomGlass);
 
-        // Upgrades button — check if blocked by Island Core addon
+        // ════════════ Header (slot 4) — Island info ════════════
+        int prestige = plugin.getPrestigeManager().getPrestigeLevel(island.getId());
+        int minLevelForPrestige = plugin.getPrestigeManager().getMinLevelToPrestige();
+        int currentLevel = island.getLevel();
+        int displayCurLevel = Math.min(currentLevel, minLevelForPrestige);
+        int prestigeTokens = plugin.getPrestigeShopManager().getTokens(island.getId());
+
+        ItemStack info = new ItemStack(Material.GRASS_BLOCK);
+        ItemMeta iMeta = info.getItemMeta();
+        if (iMeta != null) {
+            iMeta.setDisplayName(msg("menu.main.info-title", "{island}", island.getName()));
+            List<String> iLore = new ArrayList<String>();
+            iLore.add("");
+            iLore.add(msg("menu.main.info-level", "{level}", String.valueOf(currentLevel)));
+            iLore.add(msg("menu.main.info-value", "{value}", String.format("%.0f", island.getValue())));
+            iLore.add(msg("menu.main.info-bank", "{bank}", String.format("%.0f", island.getBankBalance())));
+            iLore.add(msg("menu.main.info-members", "{count}", String.valueOf(island.getMembers().size())));
+            iLore.add("");
+            iLore.add(msg("menu.main.info-prestige",
+                    "{prestige}", String.valueOf(prestige),
+                    "{current}", String.valueOf(displayCurLevel),
+                    "{required}", String.valueOf(minLevelForPrestige)));
+            iLore.add(msg("menu.main.info-tokens", "{tokens}", String.valueOf(prestigeTokens)));
+            iMeta.setLore(iLore);
+            info.setItemMeta(iMeta);
+        }
+        inventory.setItem(4, info);
+
+        // ════════════ Row 1 (slots 10-16) ════════════
         boolean addonRegistered = isAddonRegistered();
+
+        // Home (10)
+        button(10, Material.OAK_DOOR, msg("menu.main.home"),
+                msg("menu.main.home-lore"),
+                "",
+                msg("menu.main.click-teleport"));
+
+        // Members (12)
+        button(12, Material.PLAYER_HEAD, msg("menu.main.members"),
+                msg("menu.main.members-lore"),
+                msg("menu.main.members-count", "{count}", String.valueOf(island.getMembers().size())),
+                "",
+                msg("menu.main.click-open"));
+
+        // Upgrades (14)
         if (addonRegistered && plugin.getCoreConfig().isIslandCoreDisableUpgradeMenu()) {
-            setItem(14, Material.GRAY_DYE, "&8\u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f", "&7\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439 &6\u042f\u0434\u0440\u043e \u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u0439");
+            button(14, Material.GRAY_DYE, msg("menu.main.upgrades-disabled"),
+                    msg("menu.main.upgrades-disabled-lore1"),
+                    msg("menu.main.use-core-lore2"));
         } else {
-            setItem(14, Material.DIAMOND, lang.get("menu.main.upgrades"), "&7\u0423\u043b\u0443\u0447\u0448\u0438 \u0441\u0432\u043e\u0439 \u043e\u0441\u0442\u0440\u043e\u0432.");
+            button(14, Material.DIAMOND, msg("menu.main.upgrades"),
+                    msg("menu.main.upgrades-lore"),
+                    "",
+                    msg("menu.main.click-open"));
         }
 
-        // Boosters button — check if blocked by Island Core addon
+        // Boosters (16)
         if (addonRegistered && plugin.getCoreConfig().isIslandCoreDisableBoosterMenu()) {
-            setItem(16, Material.GRAY_DYE, "&8\u0411\u0443\u0441\u0442\u0435\u0440\u044b", "&7\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439 &d\u042f\u0434\u0440\u043e \u0411\u0443\u0441\u0442\u0435\u0440\u0430");
+            button(16, Material.GRAY_DYE, msg("menu.main.boosters-disabled"),
+                    msg("menu.main.boosters-disabled-lore1"),
+                    msg("menu.main.use-core-lore2"));
         } else {
-            setItem(16, Material.BREWING_STAND, lang.get("menu.main.boosters"), "&7\u0412\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u0431\u0430\u0444\u044b.");
+            button(16, Material.BREWING_STAND, msg("menu.main.boosters"),
+                    msg("menu.main.boosters-lore"),
+                    "",
+                    msg("menu.main.click-open"));
         }
 
-        // Row 2
-        setItem(19, Material.BOOK, lang.get("menu.main.missions"), "&7\u0417\u0430\u0434\u0430\u043d\u0438\u044f \u0437\u0430 \u043d\u0430\u0433\u0440\u0430\u0434\u044b.");
-        setItem(21, Material.EMERALD, lang.get("menu.main.shop"), "&7\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u0438 \u043f\u0440\u043e\u0434\u0430\u0436\u0430.");
-        setItem(23, Material.GOLD_INGOT, lang.get("menu.main.bank"), "&7\u0411\u0430\u043d\u043a \u043e\u0441\u0442\u0440\u043e\u0432\u0430.");
-        setItem(25, Material.NETHER_STAR, lang.get("menu.main.top"), "&7\u0422\u0430\u0431\u043b\u0438\u0446\u0430 \u043b\u0438\u0434\u0435\u0440\u043e\u0432.");
+        // ════════════ Row 2 (slots 19-25) ════════════
+        button(19, Material.WRITTEN_BOOK, msg("menu.main.missions"),
+                msg("menu.main.missions-lore"),
+                "",
+                msg("menu.main.click-open"));
 
-        // Row 3
-        setItem(30, Material.ENDER_PEARL, lang.get("menu.main.warps"), "&7\u0412\u0430\u0440\u043f\u044b \u043e\u0441\u0442\u0440\u043e\u0432\u0430.");
-        setItem(32, Material.COMPARATOR, lang.get("menu.main.settings"), "&7\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u043e\u0441\u0442\u0440\u043e\u0432\u0430.");
+        button(21, Material.EMERALD, msg("menu.main.shop"),
+                msg("menu.main.shop-lore"),
+                "",
+                msg("menu.main.click-open"));
+
+        button(23, Material.GOLD_INGOT, msg("menu.main.bank"),
+                msg("menu.main.bank-lore"),
+                msg("menu.main.bank-current", "{bank}", String.format("%.0f", island.getBankBalance())),
+                "",
+                msg("menu.main.click-open"));
+
+        button(25, Material.NETHER_STAR, msg("menu.main.top"),
+                msg("menu.main.top-lore"),
+                "",
+                msg("menu.main.click-open"));
+
+        // Built-in XP core (slot 22) — center between Magazin and Bank
+        if (!addonRegistered) {
+            button(22, Material.EXPERIENCE_BOTTLE, msg("menu.main.xp-core"),
+                    msg("menu.main.xp-core-lore1"),
+                    msg("menu.main.xp-core-lore2"),
+                    msg("menu.main.xp-core-lore3"),
+                    msg("menu.main.xp-core-lore4"),
+                    "",
+                    msg("menu.main.click-open"));
+        }
+
+        // ════════════ Row 3 (slots 28-34) ════════════
+        button(28, Material.NETHER_STAR, msg("menu.main.prestige-shop"),
+                msg("menu.main.prestige-shop-lore"),
+                msg("menu.main.tokens-current", "{tokens}", String.valueOf(prestigeTokens)),
+                "",
+                msg("menu.main.click-open"));
+
+        button(30, Material.ENDER_PEARL, msg("menu.main.warps"),
+                msg("menu.main.warps-lore"),
+                msg("menu.main.warps-count", "{count}", String.valueOf(island.getWarps().size())),
+                "",
+                msg("menu.main.click-open"));
+
+        button(32, Material.COMPARATOR, msg("menu.main.settings"),
+                msg("menu.main.settings-lore"),
+                "",
+                msg("menu.main.click-open"));
 
         // Events button (only if VoidRift is installed)
         if (org.bukkit.Bukkit.getPluginManager().isPluginEnabled("VoidRift")) {
-            setItem(34, Material.ENDER_EYE, "&5\u2726 \u0421\u043e\u0431\u044b\u0442\u0438\u044f", "&7\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u044f VoidRift.");
+            button(34, Material.ENDER_EYE, msg("menu.main.events"),
+                    msg("menu.main.events-lore"),
+                    "",
+                    msg("menu.main.click-open"));
         }
     }
 
@@ -96,48 +195,56 @@ public final class IslandMainMenu extends Menu {
         boolean addonRegistered = isAddonRegistered();
 
         switch (slot) {
-            case 10: // Home
+            case 10:
                 player.closeInventory();
                 player.teleport(island.getHome());
                 lang.send(player, "island.teleported-home");
                 break;
-            case 12: // Members
-                new IslandMembersMenu(player, plugin, island).open();
+            case 12:
+                new IslandMembersMenu(player, plugin, island).withParent(this).open();
                 break;
-            case 14: // Upgrades
+            case 14:
                 if (addonRegistered && plugin.getCoreConfig().isIslandCoreDisableUpgradeMenu()) {
                     lang.send(player, "island-core.upgrade-via-core");
                 } else {
-                    new UpgradesMenu(player, plugin, island).open();
+                    new UpgradesMenu(player, plugin, island).withParent(this).open();
                 }
                 break;
-            case 16: // Boosters
+            case 16:
                 if (addonRegistered && plugin.getCoreConfig().isIslandCoreDisableBoosterMenu()) {
                     lang.send(player, "island-core.booster-via-core");
                 } else {
-                    new BoostersMenu(player, plugin, island).open();
+                    new BoostersMenu(player, plugin, island).withParent(this).open();
                 }
                 break;
-            case 19: // Missions
-                new MissionCategoryMenu(player, plugin).open();
+            case 19:
+                new MissionCategoryMenu(player, plugin).withParent(this).open();
                 break;
-            case 21: // Shop
-                new ShopCategoryMenu(player, plugin).open();
+            case 21:
+                new ShopCategoryMenu(player, plugin).withParent(this).open();
                 break;
-            case 23: // Bank
-                new BankMenu(player, plugin, island).open();
+            case 22:
+                if (!addonRegistered) {
+                    plugin.getIslandValueMenu().open(player);
+                }
                 break;
-            case 25: // Top
-                new TopIslandsMenu(player, plugin).open();
+            case 23:
+                new BankMenu(player, plugin, island).withParent(this).open();
                 break;
-            case 30: // Warps
-                new WarpsMenu(player, plugin, island).open();
+            case 25:
+                new TopIslandsMenu(player, plugin).withParent(this).open();
                 break;
-            case 32: // Settings
-                new IslandSettingsMenu(player, plugin, island).open();
+            case 28:
+                new PrestigeShopMenu(player, plugin).withParent(this).open();
                 break;
-            case 34: // Events (VoidRift)
-                new EventsMenu(player, plugin).open();
+            case 30:
+                new WarpsMenu(player, plugin, island).withParent(this).open();
+                break;
+            case 32:
+                new IslandSettingsMenu(player, plugin, island).withParent(this).open();
+                break;
+            case 34:
+                new EventsMenu(player, plugin).withParent(this).open();
                 break;
         }
     }
@@ -150,16 +257,14 @@ public final class IslandMainMenu extends Menu {
         }
     }
 
-    private void setItem(int slot, Material material, String name, String... lore) {
+    private void button(int slot, Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+            meta.setDisplayName(name);
             if (lore.length > 0) {
                 List<String> loreList = new ArrayList<String>();
-                for (String line : lore) {
-                    loreList.add(ChatColor.translateAlternateColorCodes('&', line));
-                }
+                for (String line : lore) loreList.add(line);
                 meta.setLore(loreList);
             }
             item.setItemMeta(meta);
@@ -167,7 +272,7 @@ public final class IslandMainMenu extends Menu {
         inventory.setItem(slot, item);
     }
 
-    private ItemStack makeItem(Material material, String name) {
+    private ItemStack decoration(Material material, String name) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -175,5 +280,9 @@ public final class IslandMainMenu extends Menu {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private String msg(String key, String... replacements) {
+        return lang.get(key, replacements);
     }
 }

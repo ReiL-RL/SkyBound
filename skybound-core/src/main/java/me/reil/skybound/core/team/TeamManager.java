@@ -53,6 +53,7 @@ public final class TeamManager implements TeamProvider {
         island.addMember(playerId, IslandRole.MEMBER);
         islandManager.registerMember(playerId, islandId);
         pendingInvites.remove(playerId);
+        logIsland(island, playerId, me.reil.skybound.core.island.IslandLogEntry.LogAction.MEMBER_JOIN, "");
         return true;
     }
 
@@ -77,7 +78,21 @@ public final class TeamManager implements TeamProvider {
         Bukkit.getPluginManager().callEvent(event);
 
         island.removeMember(target);
+        logIsland(island, target, me.reil.skybound.core.island.IslandLogEntry.LogAction.MEMBER_KICK, "");
         return true;
+    }
+
+    /** Helper: log to island journal. */
+    private void logIsland(Island island, UUID playerId,
+                           me.reil.skybound.core.island.IslandLogEntry.LogAction action, String details) {
+        try {
+            org.bukkit.OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
+            String name = op.getName() != null ? op.getName() : playerId.toString().substring(0, 8);
+            if (plugin instanceof me.reil.skybound.core.SkyBoundPlugin) {
+                ((me.reil.skybound.core.SkyBoundPlugin) plugin).getIslandLogManager().log(
+                        island.getId(), playerId, name, action, details);
+            }
+        } catch (Throwable ignored) {}
     }
 
     @Override

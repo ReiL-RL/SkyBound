@@ -2,7 +2,6 @@ package me.reil.skybound.core.menu;
 
 import me.reil.skybound.core.SkyBoundPlugin;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -49,7 +48,7 @@ public final class EventsMenu extends Menu {
             ItemStack noEvents = new ItemStack(Material.BARRIER);
             ItemMeta meta = noEvents.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ChatColor.GRAY + "\u041d\u0435\u0442 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0441\u043e\u0431\u044b\u0442\u0438\u0439");
+                meta.setDisplayName(lang().get("menu.events.empty"));
                 noEvents.setItemMeta(meta);
             }
             inventory.setItem(13, noEvents);
@@ -66,12 +65,12 @@ public final class EventsMenu extends Menu {
                     lore.add(color(info.description));
                     lore.add("");
                     if (info.active) {
-                        lore.add(ChatColor.GREEN + "\u25CF \u0410\u043a\u0442\u0438\u0432\u043d\u043e (" + info.remainingSeconds + "\u0441)");
-                        lore.add(ChatColor.GRAY + "\u0418\u0433\u0440\u043e\u043a\u043e\u0432: " + info.participants);
+                        lore.add(lang().get("menu.events.active", "{time}", formatTime(info.remainingSeconds)));
+                        lore.add(lang().get("menu.events.players", "{count}", String.valueOf(info.participants)));
                         lore.add("");
-                        lore.add(ChatColor.YELLOW + "\u25B6 /event join " + info.id);
+                        lore.add(lang().get("menu.events.join", "{id}", info.id));
                     } else {
-                        lore.add(ChatColor.GRAY + "\u25CB \u041d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u043e");
+                        lore.add(lang().get("menu.events.inactive"));
                     }
                     meta.setLore(lore);
                     item.setItemMeta(meta);
@@ -80,13 +79,7 @@ public final class EventsMenu extends Menu {
             }
         }
 
-        // Back
-        inventory.setItem(22, new ItemStack(Material.ARROW));
-        ItemMeta backMeta = inventory.getItem(22).getItemMeta();
-        if (backMeta != null) {
-            backMeta.setDisplayName(lang().get("button.back"));
-            inventory.getItem(22).setItemMeta(backMeta);
-        }
+        addBackButton(22);
     }
 
     @Override
@@ -152,5 +145,15 @@ public final class EventsMenu extends Menu {
         boolean active;
         long remainingSeconds;
         int participants;
+    }
+
+    private String formatTime(long seconds) {
+        if (seconds <= 0) return lang().get("time.none");
+        long h = seconds / 3600;
+        long m = (seconds % 3600) / 60;
+        long s = seconds % 60;
+        if (h > 0) return lang().get("time.hours-minutes", "{hours}", String.valueOf(h), "{minutes}", String.valueOf(m));
+        if (m > 0) return lang().get("time.minutes-seconds", "{minutes}", String.valueOf(m), "{seconds}", String.valueOf(s));
+        return lang().get("time.seconds", "{seconds}", String.valueOf(s));
     }
 }
