@@ -33,7 +33,10 @@ description: Modular SkyBlock core with addon architecture
 # VoidRift — внешний addon/hook.
 # FlexAchievements — внешний hook достижений.
 # SkyBound-IslandCore — addon ядер острова.
-softdepend: [Vault, PlaceholderAPI, WorldEdit, FastAsyncWorldEdit, SopLib, VoidRift, FlexAchievements, SkyBound-IslandCore]
+# Required runtime dependency:
+# SopLib is the version-core used by SkyBound.
+depend: [SopLib]
+softdepend: [Vault, PlaceholderAPI, WorldEdit, FastAsyncWorldEdit, VoidRift, FlexAchievements, SkyBound-IslandCore]
 
 # Команды:
 # /is — основная команда игроков. Внутри есть create/home/team/shop/missions/etc.

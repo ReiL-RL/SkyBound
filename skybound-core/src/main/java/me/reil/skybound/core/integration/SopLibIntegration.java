@@ -15,9 +15,9 @@ import java.util.List;
 /**
  * SopLib runtime integration for multi-version support.
  *
- * Reflection keeps SopLib optional at compile time, so the project can be
- * built without publishing SopLib to Maven. On the server, SopLib should be
- * installed to enable multi-version item/text/location/protection helpers.
+ * Reflection keeps SopLib out of the Maven compile classpath, so the project can be
+ * built without publishing SopLib to Maven. On the server, SopLib is a required
+ * runtime dependency and acts as SkyBound's multi-version compatibility core.
  */
 public final class SopLibIntegration {
 
@@ -43,7 +43,7 @@ public final class SopLibIntegration {
         }
 
         if (!available) {
-            plugin.getLogger().warning("SopLib not found. Multi-version helpers are disabled; using basic Bukkit fallback.");
+            plugin.getLogger().warning("SopLib runtime bridge is not available. Check that the required SopLib plugin is installed and enabled.");
         }
     }
 

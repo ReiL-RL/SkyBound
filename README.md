@@ -27,6 +27,7 @@ README написан так, чтобы по нему можно было по�
 
 - Java 8+
 - Spigot/Paper 1.16.5+
+- SopLib
 - Vault
 - любой Vault economy plugin, например EssentialsX Economy
 
@@ -34,12 +35,13 @@ README написан так, чтобы по нему можно было по�
 
 - PlaceholderAPI — плейсхолдеры
 - WorldEdit или FastAsyncWorldEdit — schematic-вставка
-- SopLib — multi-version helpers, если стоит на сервере
 - VoidRift — интеграция событий
 - FlexAchievements — интеграция достижений
 - SkyBound-IslandCore — addon ядер острова
 
-Если опционального плагина нет, SkyBound всё равно запускается. Интеграция просто отключается.
+SopLib обязателен: он используется как ядро совместимости версий. Если SopLib не установлен, Bukkit/Paper не должен запускать SkyBound.
+
+Если другого опционального плагина нет, SkyBound всё равно запускается. Интеграция просто отключается.
 
 ## Как собрать jar
 
