@@ -67,7 +67,7 @@ mvn -q -DskipTests compile
 
 1. Собери jar командой выше.
 2. Положи `SkyBound-2.0.0-SNAPSHOT.jar` в папку `plugins/`.
-3. Убедись, что в `plugins/` также есть Vault и economy plugin.
+3. Убедись, что в `plugins/` также есть SopLib, Vault и economy plugin.
 4. Запусти сервер.
 5. После первого запуска появится папка `plugins/SkyBound/`.
 6. Останови сервер.
@@ -250,7 +250,402 @@ plugins/SkyBound/
 | `prestige-shop.yml` | магазин за prestige tokens |
 | `lang/lang_ru.yml` | русский язык |
 | `lang/lang_en.yml` | английский язык |
-| `plugin.yml` | команды, permissions, softdepend |
+| `plugin.yml` | команды, permissions, depend и softdepend |
+
+## Все конфиги подробно
+
+Ниже — что именно можно настраивать в каждом файле. Почти все изменения безопаснее применять так: остановил сервер → изменил файл → запустил сервер. `/sbadmin reload` можно использовать для быстрой проверки, но для мира, schematic, storage, plugin.yml и зависимостей лучше делать полный restart.
+
+### `config.yml`
+
+Главный конфиг ядра.
+
+Основные блоки:
+
+| Блок | Что делает |
+| --- | --- |
+| `language` | язык сообщений: `ru` → `lang/lang_ru.yml`, `en` → `lang/lang_en.yml` |
+| `autosave-seconds` | как часто сохранять данные островов/миссий/апгрейдов |
+| `storage` | режим хранения данных, сейчас основной режим — `yaml` |
+| `island-world` | имя мира островов, расстояние между островами, радиус, высота, Nether/End |
+| `island` | базовые лимиты команды, варпов, банка, существ и XP на уровень |
+| `performance` | скорость тяжёлых операций: regen, value scan, смена биома |
+| `generator` | включение генератора руд |
+| `block-values` | стоимость блоков для `/is value` и топа островов |
+| `xp` | настройки пассивного XP |
+| `island-core` | что отключать в ядре, если установлен addon IslandCore |
+| `economy` | валюта, множители цен магазина и наград миссий |
+| `prestige` | уровень/цена/награда престижа |
+
+Самые важные параметры для баланса:
+
+```yaml
+island:
+  max-team-size: 3
+  max-warps: 5
+  base-bank-limit: 1000000
+  base-entity-limit: 75
+  xp-per-level: 250
+
+economy:
+  shop:
+    buy-multiplier: 1.15
+    sell-multiplier: 0.85
+  missions:
+    money-multiplier: 1.0
+    island-xp-multiplier: 0.85
+
+performance:
+  regen-blocks-per-tick: 12000
+```
+
+Когда менять:
+
+- медленный regen → `performance.regen-blocks-per-tick`;
+- слишком быстрые уровни → `island.xp-per-level` или `economy.missions.island-xp-multiplier`;
+- слишком много мобов → `island.base-entity-limit` и `upgrades.yml/entity_limit`;
+- слишком лёгкая экономика → `economy.shop.*` и `economy.missions.*`.
+
+### `shop.yml`
+
+Файл магазина. Внутри:
+
+```yaml
+categories:
+  blocks:
+    display-name: "..."
+    icon: GRASS_BLOCK
+    slot: 10
+    items:
+      cobblestone:
+        display-name: "..."
+        material: COBBLESTONE
+        buy-price: 3.0
+        sell-price: 1.0
+        default-amount: 64
+        slot: 0
+        lore: []
+```
+
+Категории по умолчанию:
+
+- `blocks` — строительные блоки;
+- `ores` — руды, слитки, минералы;
+- `farming` — ферма и семена;
+- `food` — еда;
+- `tools` — инструменты и оружие;
+- `armor` — броня;
+- `redstone` — редстоун;
+- `decoration` — декор;
+- `brewing` — зелья/алхимия;
+- `spawners` — spawn eggs;
+- `special` — редкие предметы.
+
+Поля предмета:
+
+| Поле | Что значит |
+| --- | --- |
+| `display-name` | название в GUI |
+| `material` | Bukkit Material |
+| `item` | сериализованный Bukkit ItemStack для meta/NBT предметов |
+| `buy-price` | цена покупки, `0` = нельзя купить |
+| `sell-price` | цена продажи, `0` = нельзя продать |
+| `default-amount` | количество за клик |
+| `slot` | слот в меню категории |
+| `lore` | описание |
+| `commands` | команды от консоли после покупки |
+
+Важно: итоговая цена ещё умножается на `economy.shop.buy-multiplier` и `economy.shop.sell-multiplier` из `config.yml`.
+
+### `missions.yml`
+
+Файл миссий. Сейчас там 100+ миссий и покрыты все основные типы условий.
+
+Структура:
+
+```yaml
+missions:
+  mission_id:
+    display-name: "&aНазвание"
+    category: "mining"
+    icon: DIAMOND
+    required-level: 1
+    prerequisites: []
+    repeatable: false
+    cooldown-seconds: 0
+    time-limit-seconds: 0
+    reset: daily
+    conditions:
+      mode: AND
+      list:
+        - type: BREAK_BLOCK
+          target: STONE
+          amount: 100
+    rewards:
+      money: 500.0
+      island-xp: 50
+      items: []
+      commands: []
+    lore: []
+```
+
+Важные поля:
+
+| Поле | Что значит |
+| --- | --- |
+| `required-level` | минимальный уровень острова |
+| `prerequisites` | какие миссии нужно пройти до этой |
+| `repeatable` | можно ли повторять |
+| `cooldown-seconds` | задержка повтора |
+| `time-limit-seconds` | лимит времени на выполнение |
+| `reset` | `daily` или `weekly` для регулярных миссий |
+| `conditions.mode` | `AND` — все условия, `OR` — любое |
+| `rewards.money` | деньги игроку |
+| `rewards.island-xp` | XP острову |
+| `rewards.items` | предметы игроку |
+| `rewards.commands` | консольные команды |
+
+Типы условий:
+
+```text
+BREAK_BLOCK, PLACE_BLOCK, KILL_MOB, CRAFT_ITEM, SMELT_ITEM, BREW_POTION,
+ENCHANT_ITEM, FISH, HARVEST, SHEAR, BREED, TAME, ISLAND_LEVEL, ISLAND_VALUE,
+BANK_DEPOSIT, SHOP_BUY, SHOP_SELL, GENERATOR_COLLECT, PICKUP_ITEM, EAT,
+WALK_DISTANCE, GAIN_XP, CUSTOM
+```
+
+`CUSTOM` нужен addon'ам. Например VoidRift/addon может отправить прогресс события в миссию.
+
+### `upgrades.yml`
+
+Файл постоянных улучшений острова. Покупаются из банка острова.
+
+Текущие улучшения:
+
+| ID | Тип | Что улучшает |
+| --- | --- | --- |
+| `island_size` | `ISLAND_SIZE` | радиус острова |
+| `team_size` | `TEAM_SIZE` | лимит участников |
+| `bank_capacity` | `BANK_CAPACITY` | вместимость банка |
+| `generator_tier` | `GENERATOR_TIER` | уровень генератора |
+| `hopper_limit` | `HOPPER_LIMIT` | лимит воронок |
+| `crop_growth` | `CROP_GROWTH` | рост растений |
+| `spawner_rate` | `SPAWNER_RATE` | скорость спавнеров |
+| `entity_limit` | `ENTITY_LIMIT` | лимит существ |
+| `mob_drop` | `MOB_DROP` | множитель дропа |
+
+Структура:
+
+```yaml
+upgrades:
+  island_size:
+    display-name: "&aРазмер острова"
+    icon: GRASS_BLOCK
+    type: ISLAND_SIZE
+    levels:
+      1: { cost: 15000, value: 10 }
+```
+
+`cost` — цена уровня, `value` — эффект уровня.
+
+### `boosters.yml`
+
+Файл временных бустеров. Покупаются из банка острова. Повторная покупка активного бустера запрещена, чтобы игрок не терял деньги.
+
+Текущие бустеры:
+
+- `farming`;
+- `experience`;
+- `spawner`;
+- `generator`;
+- `flight`;
+- `island_xp`.
+
+Структура:
+
+```yaml
+boosters:
+  farming:
+    display-name: "&aБустер фермерства"
+    description: "&7Описание"
+    icon: WHEAT
+    type: FARMING
+    duration-seconds: 900
+    cost: 12000.0
+    multiplier: 1.75
+```
+
+### `generators.yml`
+
+Файл уровней генератора руд.
+
+Текущие tiers:
+
+- `basic`;
+- `advanced`;
+- `elite`;
+- `legendary`.
+
+Структура:
+
+```yaml
+tiers:
+  basic:
+    display-name: "&7Basic Generator"
+    icon: COBBLESTONE
+    required-level: 1
+    distribution:
+      COBBLESTONE: 70
+      COAL_ORE: 20
+      IRON_ORE: 10
+```
+
+`distribution` — это веса, не проценты. Чем больше число, тем чаще материал выпадает.
+
+### `schematics.yml`
+
+Файл типов островов и schematic-файлов.
+
+Текущие типы:
+
+- `desert`;
+- `desert_nether`;
+- `desert_end`;
+- `jungle`;
+- `jungle_nether`;
+- `jungle_end`;
+- `mushroom`;
+- `mushroom_nether`;
+- `mushroom_end`.
+
+Schematic-файлы лежат в:
+
+```text
+skybound-core/src/main/resources/schematics/
+```
+
+На сервере они должны быть в папке plugin data после первого запуска.
+
+Обычно меняют:
+
+- `display-name`;
+- `file`;
+- `spawn-offset`;
+- `icon`;
+- доступность по уровню/измерению, если это задано в конкретной схеме.
+
+### `recipes.yml`
+
+Файл кастомных рецептов.
+
+Текущие рецепты:
+
+- `island_key`;
+- `compressed_cobble`;
+- `island_compass`.
+
+Обычно структура такая:
+
+```yaml
+recipes:
+  compressed_cobble:
+    type: SHAPED
+    result:
+      material: COBBLESTONE
+      amount: 1
+    shape:
+      - "CCC"
+      - "CCC"
+      - "CCC"
+    ingredients:
+      C: COBBLESTONE
+```
+
+После изменения рецептов лучше делать restart.
+
+### `seasons.yml`
+
+Файл сезонов.
+
+Основные поля:
+
+| Поле | Что значит |
+| --- | --- |
+| `seasons.enabled` | включить/выключить сезоны |
+| `seasons.duration-days` | длительность сезона |
+| `seasons.auto-reset-islands` | сбрасывать ли острова автоматически |
+| `seasons.rewards` | награды за места |
+| `seasons.announce-end` | объявлять конец сезона |
+
+Если сезонная система не нужна — поставь:
+
+```yaml
+seasons:
+  enabled: false
+```
+
+### `prestige-shop.yml`
+
+Файл магазина за prestige tokens.
+
+Структура предмета:
+
+```yaml
+items:
+  reward_id:
+    material: NETHERITE_INGOT
+    name: "&8Награда"
+    lore: []
+    cost: 3
+    rewards:
+      - material: NETHERITE_INGOT
+        amount: 4
+    commands: []
+```
+
+Поддерживается:
+
+- обычные предметы;
+- enchantments;
+- spawner type;
+- firework flight;
+- команды от консоли через `{player}`.
+
+### `lang/lang_ru.yml` и `lang/lang_en.yml`
+
+Файлы сообщений.
+
+Здесь меняется весь текст:
+
+- сообщения команд;
+- GUI;
+- ошибки;
+- подсказки;
+- подтверждения;
+- help-страницы.
+
+Цвета пишутся через `&`, например:
+
+```yaml
+island.created: "&aОстров создан!"
+```
+
+Если добавляешь новый ключ в один язык, желательно добавить его и во второй.
+
+### `plugin.yml`
+
+Служебный файл Bukkit/Paper.
+
+Что в нём:
+
+- `main` — главный Java-класс;
+- `api-version`;
+- `depend: [SopLib]` — обязательная зависимость;
+- `softdepend` — опциональные интеграции;
+- `commands` — регистрация `/is` и `/sbadmin`;
+- `permissions` — базовые Bukkit permissions.
+
+Обычно этот файл не меняют на готовом сервере. После изменения нужен restart.
 
 ## Как балансить экономику
 
@@ -485,6 +880,7 @@ PlaceholderAPI expansion registered
 
 - стоит ли Java 8+;
 - подходит ли версия сервера 1.16.5+;
+- есть ли SopLib;
 - есть ли Vault;
 - есть ли economy plugin;
 - нет ли ошибок YAML в конфигах.
